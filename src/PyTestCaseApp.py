@@ -349,3 +349,7 @@ class PyTestCasesApp(QWidget):
 
         # set test_cases
         self.test_cases += raw_data
+        
+        # remove empty results from end of the file
+        while self.test_cases[-1]["Test Case ID"] is None:
+            self.test_cases.pop()
