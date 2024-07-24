@@ -40,6 +40,8 @@ It is possible to open already saved ``output file``, but then there is no possi
 - [ ] Add Preconditions
 - [ ] Make xlsx importing more flexible
 - [ ] Add Test Case Creation
+- [ ] Add Test Case Edidtion
 - [ ] Add Test Case filtering
 - [ ] Add Test Report functionaltiy
+- [ ] Add Support for light mode ( currently pastel colors are to pastel and barely visible on light mode )
 
