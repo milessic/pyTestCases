@@ -291,7 +291,12 @@ class PyTestCasesApp(QWidget):
         ws = wb.active
 
         # fetch column names
-        column_names = [cell.value.title() for cell in ws[3]]
+        column_names = []
+        for cell in ws[3]:
+            try:
+                column_names.append(cell.value.title())
+            except AttributeError:
+                break
 
         # initialize variables
         raw_data = []
