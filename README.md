@@ -10,7 +10,7 @@ test data from file format:
 
 Example input data:
 ## Json format
-``json
+```json
 [
 	{
 		"Test Case ID": 1,
@@ -24,13 +24,13 @@ Example input data:
 		"Test Status": null
 	}
 ]
-``
+```
 
 ## Excel format
-``
+```
 <column 3>| Test Case Id | Feature | Level | Test Case Name | Test Steps | Preconditions | Test Step Description | Expected Results |
 <column 4+> {Test Cases Data}
-``
+```
 
 # Saving and loading sessions
 Sessinos are saved after clicking one of ``Status button`` at the bottom.
