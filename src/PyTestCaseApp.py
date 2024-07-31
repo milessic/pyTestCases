@@ -33,6 +33,7 @@ class PyTestCasesApp(QWidget):
 
     def __init__(self, start_maximized: bool = False):
         super().__init__()
+        self.show_save_popup = True
         self.test_cases = []
         self.current_test_index = 0
         self.test_execution_id = None
@@ -275,7 +276,9 @@ class PyTestCasesApp(QWidget):
             json.dump(self.test_cases, file, indent=4)
 
         # inform user that it worked
-        QMessageBox.information(self, "Info", f"Results saved to {output_file_name}")
+        if self.show_save_popup:
+            QMessageBox.information(self, "Info", f"<b>This pop-up is shown once per session!</b><br>Results saved to {output_file_name}")
+            self.show_save_popup = False
         self.test_cases.remove("from_output")
 
     def loadFromJson(self, file_path: str):
