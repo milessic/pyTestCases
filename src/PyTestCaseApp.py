@@ -24,6 +24,7 @@ class PyTestCasesApp(Tk):
         self.test_execution_id = None
         self.start_maximized = start_maximized
         self.initUI()
+        self.style = ttk.Style(self)
         if self.start_maximized:
             print("Window maximized Not supported!")
             #self.attributes('-fullscreen', True)
@@ -151,6 +152,12 @@ class PyTestCasesApp(Tk):
             self.test_case_table.delete(row)
 
         for step in test_case["Test Steps"]:
+            lines_step = step[0].count("\n")
+            lines_expected = step[1].count("\n")
+            rowheight = max(lines_step, lines_expected) * 20
+            rowheight = rowheight if rowheight else 20
+            print(step[0],rowheight)
+            self.style.configure("Treeview", rowheight=rowheight)
             self.test_case_table.insert("", "end", values=step)
 
     def updateTestStatus(self, status):
