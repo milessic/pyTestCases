@@ -1,11 +1,8 @@
 import sys
 
-from PyQt5.QtWidgets import QApplication
-
 from src.PyTestCaseApp import PyTestCasesApp
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    ex = PyTestCasesApp()
-    ex.show()
-    sys.exit(app.exec_())
+    start_maximized = "-m" in sys.argv
+    app = PyTestCasesApp(start_maximized=start_maximized)
+    app.mainloop()

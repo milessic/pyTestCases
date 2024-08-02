@@ -12,18 +12,21 @@ class Colors:
     green = "#baffc9"
     yellow = "#ffdfba"
     gray = "#ababab"
+    status_bg = "#6b6967"
 
 
 class PyTestCasesApp(Tk):
     def __init__(self, start_maximized: bool = False):
         super().__init__()
+        self.show_save_info = True
         self.test_cases = []
         self.current_test_index = 0
         self.test_execution_id = None
         self.start_maximized = start_maximized
         self.initUI()
         if self.start_maximized:
-            self.state('zoomed')
+            print("Window maximized Not supported!")
+            #self.attributes('-fullscreen', True)
 
     def initUI(self):
         # setup Window Title
@@ -46,11 +49,14 @@ class PyTestCasesApp(Tk):
         self.test_case_dropdown.bind("<<ComboboxSelected>>", self.displayTestCase)
 
         # setup Test Case Title
-        self.test_case_title = Label(self, text="Select a test case")
-        self.test_case_title.grid(row=2, column=0, columnspan=3, padx=5, pady=5)
+        #self.test_case_title = Label(self, text="Select a test case")
+        #self.test_case_title.grid(row=2, column=0, columnspan=3, padx=5, pady=5)
 
-        self.test_status_label = Label(self, text="Test Status:")
-        self.test_status_label.grid(row=3, column=0, columnspan=3, padx=5, pady=5)
+        # setup Test Case Status
+        self.test_status_info_label = Label(self, text="Test Status:")
+        self.test_status_info_label.grid(row=3, column=0, columnspan=3, padx=0, pady=5, sticky="W")
+        self.test_status_label = Label(self, text="")
+        self.test_status_label.grid(row=3, column=1, columnspan=3, padx=0, pady=5, sticky="W")
 
         # setup Test Case Table
         self.test_case_table = ttk.Treeview(self, columns=("Description", "Expected Result"), show='headings')
@@ -86,10 +92,7 @@ class PyTestCasesApp(Tk):
         self.next_button.pack(side="left", padx=5, pady=5)
 
     def setTestStatus(self, test_status: str):
-        self.test_status_label.config(text=f"Test Status: {self.returnTestStatus(test_status)}")
-
-    def returnTestStatus(self, status: str | None) -> str:
-        status = str(status).upper()
+        status = str(test_status).upper()
         match status:
             case "PASS":
                 color = Colors.green
@@ -99,7 +102,10 @@ class PyTestCasesApp(Tk):
                 color = Colors.yellow
             case _:
                 color = Colors.gray
+        self.test_status_label.config(text=test_status, fg=color, bg=Colors.status_bg)
         return f"""<b style="color: {color};">{status}</b>"""
+        print(test_status)
+
 
     def loadTests(self):
         file_path = filedialog.askopenfilename()
@@ -138,7 +144,7 @@ class PyTestCasesApp(Tk):
             return
 
         test_case = self.test_cases[self.current_test_index]
-        self.test_case_title.config(text=f"{test_case['Test Case ID']} - {test_case['Test Case Name']}")
+        #self.test_case_title.config(text=f"{test_case['Test Case ID']} - {test_case['Test Case Name']}")
         self.setTestStatus(test_case["Test Status"])
 
         for row in self.test_case_table.get_children():
@@ -180,7 +186,9 @@ class PyTestCasesApp(Tk):
         with open(output_file_name, "w") as file:
             json.dump(self.test_cases, file, indent=4)
 
-        messagebox.showinfo("Info", f"Results saved to {output_file_name}")
+        if self.show_save_info:
+            messagebox.showinfo("Info", f"This pop-up is shown once per session!\nResults saved to {output_file_name}")
+            self.show_save_info = False
         self.test_cases.remove("from_output")
 
     def loadFromJson(self, file_path: str):
