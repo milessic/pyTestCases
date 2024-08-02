@@ -1,24 +1,10 @@
 import json
 from pathlib import Path
 from time import time
-
-from openpyxl import load_workbook
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFontMetrics
-from PyQt5.QtWidgets import (
-    QComboBox,
-    QFileDialog,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QMessageBox,
-    QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
-    QVBoxLayout,
-    QWidget,
+from tkinter import (
+    Tk, StringVar, Label, Entry, Button, Frame, filedialog, messagebox, ttk
 )
-
+from openpyxl import load_workbook
 
 class Colors:
     black = "black"
@@ -28,9 +14,7 @@ class Colors:
     gray = "#ababab"
 
 
-class PyTestCasesApp(QWidget):
-    r"""QWidget to load and execute Test Cases"""
-
+class PyTestCasesApp(Tk):
     def __init__(self, start_maximized: bool = False):
         super().__init__()
         self.test_cases = []
@@ -39,99 +23,72 @@ class PyTestCasesApp(QWidget):
         self.start_maximized = start_maximized
         self.initUI()
         if self.start_maximized:
-            self.showMaximized()
+            self.state('zoomed')
 
     def initUI(self):
         # setup Window Title
-        self.setWindowTitle("pyTestCases")
-
-        # setup Layout
-        self.layout = QVBoxLayout()
+        self.title("pyTestCases")
 
         # setup Top Panel
-        self.execution_id_label = QLabel("Test Execution ID:")
-        self.execution_id_input = QLineEdit()
-        self.execution_id_button = QPushButton("Load Tests")
-        self.execution_id_button.clicked.connect(self.loadTests)
+        self.execution_id_label = Label(self, text="Test Execution ID:")
+        self.execution_id_label.grid(row=0, column=0, padx=5, pady=5)
 
-        self.execution_layout = QHBoxLayout()
-        self.execution_layout.addWidget(self.execution_id_label)
-        self.execution_layout.addWidget(self.execution_id_input)
-        self.execution_layout.addWidget(self.execution_id_button)
+        self.execution_id_input = Entry(self)
+        self.execution_id_input.grid(row=0, column=1, padx=5, pady=5)
 
-        self.layout.addLayout(self.execution_layout)
+        self.execution_id_button = Button(self, text="Load Tests", command=self.loadTests)
+        self.execution_id_button.grid(row=0, column=2, padx=5, pady=5)
 
         # setup Dropdown
-        self.test_case_dropdown = QComboBox()
-        self.test_case_dropdown.currentIndexChanged.connect(self.displayTestCase)
-        self.layout.addWidget(self.test_case_dropdown)
+        self.test_case_var = StringVar()
+        self.test_case_dropdown = ttk.Combobox(self, textvariable=self.test_case_var)
+        self.test_case_dropdown.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        self.test_case_dropdown.bind("<<ComboboxSelected>>", self.displayTestCase)
 
         # setup Test Case Title
-        self.test_case_title = QLabel("Select a test case")
-        self.test_status_label = QLabel("Test Status:")
-        self.layout.addWidget(self.test_case_title)
-        self.layout.addWidget(self.test_status_label)
+        self.test_case_title = Label(self, text="Select a test case")
+        self.test_case_title.grid(row=2, column=0, columnspan=3, padx=5, pady=5)
+
+        self.test_status_label = Label(self, text="Test Status:")
+        self.test_status_label.grid(row=3, column=0, columnspan=3, padx=5, pady=5)
 
         # setup Test Case Table
-        self.test_case_table = QTableWidget()
-        self.test_case_table.setColumnCount(2)
-        self.test_case_table.setHorizontalHeaderLabels(
-            ["Description", "Expected Result"]
-        )
-        self.test_case_table.setColumnWidth(0, 300)
-
-        self.test_case_table.horizontalHeader().setStretchLastSection(True)
-
-        self.test_case_table.setWordWrap(True)
-        self.layout.addWidget(self.test_case_table)
+        self.test_case_table = ttk.Treeview(self, columns=("Description", "Expected Result"), show='headings')
+        self.test_case_table.heading("Description", text="Description")
+        self.test_case_table.heading("Expected Result", text="Expected Result")
+        self.test_case_table.column("Description", width=300)
+        self.test_case_table.grid(row=4, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
 
         # setup Buttons and their functions
-        self.button_layout = QHBoxLayout()
+        self.button_frame = Frame(self)
+        self.button_frame.grid(row=5, column=0, columnspan=3, padx=5, pady=5)
 
-        self.pass_button = QPushButton("PASS")
-        self.pass_button.setStyleSheet(f"background-color: {Colors.green};color: black")
-        self.pass_button.clicked.connect(lambda: self.updateTestStatus("PASS"))
-        self.fail_button = QPushButton("FAIL")
-        self.fail_button.setStyleSheet(f"background-color: {Colors.red};color: black")
-        self.fail_button.clicked.connect(lambda: self.updateTestStatus("FAIL"))
-        self.blocked_button = QPushButton("BLOCKED")
-        self.blocked_button.setStyleSheet(
-            f"background-color: {Colors.yellow};color: black"
-        )
-        self.blocked_button.clicked.connect(lambda: self.updateTestStatus("BLOCKED"))
-        self.not_tested_button = QPushButton("NOT TESTED")
-        self.not_tested_button.setStyleSheet(
-            "background-color: {Colors.gray};color: black"
-        )
-        self.not_tested_button.clicked.connect(
-            lambda: self.updateTestStatus("NOT TESTED")
-        )
+        self.pass_button = Button(self.button_frame, text="PASS", bg=Colors.green, fg="black",
+                                  command=lambda: self.updateTestStatus("PASS"))
+        self.pass_button.pack(side="left", padx=5, pady=5)
 
-        self.prev_button = QPushButton("Previous")
-        self.prev_button.clicked.connect(self.previousTestCase)
-        self.next_button = QPushButton("Next")
-        self.next_button.clicked.connect(self.nextTestCase)
+        self.fail_button = Button(self.button_frame, text="FAIL", bg=Colors.red, fg="black",
+                                  command=lambda: self.updateTestStatus("FAIL"))
+        self.fail_button.pack(side="left", padx=5, pady=5)
 
-        self.button_layout.addWidget(self.pass_button)
-        self.button_layout.addWidget(self.fail_button)
-        self.button_layout.addWidget(self.blocked_button)
-        self.button_layout.addWidget(self.not_tested_button)
-        self.button_layout.addWidget(self.prev_button)
-        self.button_layout.addWidget(self.next_button)
+        self.blocked_button = Button(self.button_frame, text="BLOCKED", bg=Colors.yellow, fg="black",
+                                     command=lambda: self.updateTestStatus("BLOCKED"))
+        self.blocked_button.pack(side="left", padx=5, pady=5)
 
-        self.layout.addLayout(self.button_layout)
+        self.not_tested_button = Button(self.button_frame, text="NOT TESTED", bg=Colors.gray, fg="black",
+                                        command=lambda: self.updateTestStatus("NOT TESTED"))
+        self.not_tested_button.pack(side="left", padx=5, pady=5)
 
-        # set Layout
-        self.setLayout(self.layout)
+        self.prev_button = Button(self.button_frame, text="Previous", command=self.previousTestCase)
+        self.prev_button.pack(side="left", padx=5, pady=5)
+
+        self.next_button = Button(self.button_frame, text="Next", command=self.nextTestCase)
+        self.next_button.pack(side="left", padx=5, pady=5)
 
     def setTestStatus(self, test_status: str):
-        # sets Test Status in the Application Window
-        self.test_status_label.setText(
-            f"Test Status: {self.returnTestStatus(test_status)}"
-        )
+        self.test_status_label.config(text=f"Test Status: {self.returnTestStatus(test_status)}")
 
     def returnTestStatus(self, status: str | None) -> str:
-        # return formatted Test Status as string
         status = str(status).upper()
         match status:
             case "PASS":
@@ -145,198 +102,106 @@ class PyTestCasesApp(QWidget):
         return f"""<b style="color: {color};">{status}</b>"""
 
     def loadTests(self):
-        r"Loads tests from file"
-        # use OpenFileName to opne file from the system
-        file_path = QFileDialog.getOpenFileName(self)[0]
+        file_path = filedialog.askopenfilename()
         self.file_name = Path(file_path).name
 
-        # open file or
         if file_path.endswith("xlsx"):
             self.loadFromXlsx(file_path)
         elif file_path.endswith("json"):
             self.loadFromJson(file_path)
         else:
-            # TODO add popup that file is not supported
-            pass
+            messagebox.showerror("Error", "File format not supported")
+            return
 
-        # if file origin is from pyTestCasses, then set the file_loaded_from_output flag and remove `from_output` entry from data
-        # also disable execution_id_input to prevent saveAs functionlity
         if self.test_cases[0] == "from_output":
             self.file_loaded_from_output = True
-            self.execution_id_input.setDisabled(True)
+            self.execution_id_input.config(state="disabled")
             self.test_cases.remove("from_output")
         else:
             self.file_loaded_from_output = False
-            current_text_execution = self.execution_id_input.text()
+            current_text_execution = self.execution_id_input.get()
             if current_text_execution == "":
                 self.test_execution_id = str(int(time()))
-                self.execution_id_input.setText(self.test_execution_id)
+                self.execution_id_input.insert(0, self.test_execution_id)
 
-        # set up test_case_dropdown
-        self.test_case_dropdown.clear()
-        for test_case in self.test_cases:
-            self.test_case_dropdown.addItem(
-                f"{test_case['Test Case ID']} - {test_case['Test Case Name']}"
-            )
+        self.test_case_dropdown['values'] = [
+            f"{test_case['Test Case ID']} - {test_case['Test Case Name']}" for test_case in self.test_cases
+        ]
 
-        # display tes case
+        self.current_test_index = 0
+        self.test_case_dropdown.current(self.current_test_index)
         self.displayTestCase()
 
-    def displayTestCase(self):
-        r"Displays test case from current_test_index"
-        # get the index from test_case_dropdown
-        self.current_test_index = self.test_case_dropdown.currentIndex()
+    def displayTestCase(self, event=None):
+        self.current_test_index = self.test_case_dropdown.current()
         if self.current_test_index == -1:
             return
 
-        # load test case from test_cases
         test_case = self.test_cases[self.current_test_index]
-        self.test_case_title.setText(
-            f"{test_case['Test Case ID']} - {test_case['Test Case Name']}"
-        )
+        self.test_case_title.config(text=f"{test_case['Test Case ID']} - {test_case['Test Case Name']}")
         self.setTestStatus(test_case["Test Status"])
 
-        # populate test_case_table with test_case data
-        self.test_case_table.setRowCount(len(test_case["Test Steps"]))
-        for row, step in enumerate(test_case["Test Steps"]):
-            item_description = QTableWidgetItem(str(step[0]))
-            item_description.setTextAlignment(Qt.AlignLeft | Qt.AlignTop)
-            item_expected = QTableWidgetItem(str(step[1]))
-            item_expected.setTextAlignment(Qt.AlignLeft | Qt.AlignTop)
-            self.test_case_table.setItem(row, 0, item_description)
-            self.test_case_table.setItem(row, 1, item_expected)
-            self.test_case_table.resizeRowsToContents()
-            self.resizeRowsToFitContents()
-        self.test_case_table.resizeRowsToContents()
+        for row in self.test_case_table.get_children():
+            self.test_case_table.delete(row)
 
-    def resizeRowsToFitContents(self):
-        """Resize all row heights to fit contents."""
-        for row in range(self.test_case_table.rowCount()):
-            self.resizeRowToContents(row)
-
-    def resizeRowToContents(self, row):
-        """Resize certain row height to fit contents."""
-        font_metrics = QFontMetrics(self.test_case_table.font())
-        row_height = 0
-
-        # iterate through items in the row
-        for column in range(self.test_case_table.columnCount()):
-            item = self.test_case_table.item(row, column)
-            if item:
-                # calculate height of the text
-                text_height = font_metrics.boundingRect(item.text()).height()
-                row_height = max(row_height, text_height)
-
-        # add padding
-        padding = 10
-        row_height += padding
-
-        # set row height
-        self.test_case_table.setRowHeight(row, row_height)
+        for step in test_case["Test Steps"]:
+            self.test_case_table.insert("", "end", values=step)
 
     def updateTestStatus(self, status):
-        r"Updates Test Status both in data and UI"
         self.test_cases[self.current_test_index]["Test Status"] = status
         self.setTestStatus(status)
         self.saveResults()
 
     def previousTestCase(self):
-        r"Loads previous test_case"
         if self.current_test_index > 0:
             self.current_test_index -= 1
-            self.test_case_dropdown.setCurrentIndex(self.current_test_index)
+            self.test_case_dropdown.current(self.current_test_index)
+            self.displayTestCase()
 
     def nextTestCase(self):
-        r"Loads next test case"
         if self.current_test_index < len(self.test_cases) - 1:
             self.current_test_index += 1
-            self.test_case_dropdown.setCurrentIndex(self.current_test_index)
+            self.test_case_dropdown.current(self.current_test_index)
+            self.displayTestCase()
 
     def saveResults(self):
-        r"Saves results to the file"
-        # TODO error handling
-        # format test_execution_id
-        self.test_execution_id = self.execution_id_input.text().strip()
+        self.test_execution_id = self.execution_id_input.get().strip()
 
-        # raise alert if test_execution_id is empty, skip for outputs
         if not self.file_loaded_from_output and not self.test_execution_id:
-            QMessageBox.warning(self, "Error", "Test Execution ID is required!")
+            messagebox.showwarning("Error", "Test Execution ID is required!")
             return
 
-        # set output name
         if self.file_loaded_from_output:
             output_file_name = self.file_name
         else:
             output_file_name = f"output_{self.test_execution_id}.json"
 
-        # inject "from_output" to the data
         self.test_cases.insert(0, "from_output")
         with open(output_file_name, "w") as file:
             json.dump(self.test_cases, file, indent=4)
 
-        # inform user that it worked
-        QMessageBox.information(self, "Info", f"Results saved to {output_file_name}")
+        messagebox.showinfo("Info", f"Results saved to {output_file_name}")
         self.test_cases.remove("from_output")
 
     def loadFromJson(self, file_path: str):
-        r"Loads file from Json via path/filename"
         with open(file_path, "r") as file:
             self.test_cases = json.load(file)
 
     def loadFromXlsx(self, file_path: str):
-        r"Loads file from Xlsx via path/filename"
-        # TODO xlsx load more customizable
-        # Open Workbook
         wb = load_workbook(file_path)
         ws = wb.active
 
-        # fetch column names
-        column_names = []
-        for cell in ws[3]:
-            try:
-                column_names.append(cell.value.title())
-            except AttributeError:
-                break
+        column_names = [cell.value for cell in ws[3]]
 
-        # initialize variables
         raw_data = []
         current_test_case = None
         current_test_steps = []
 
-        # iterate through rows
         for row in ws.iter_rows(min_row=4, values_only=True):
             row_data = dict(zip(column_names, row))
 
-            # check if it's a new test case
-            if (
-                current_test_case
-                and row_data["Test Case Id"] != current_test_case["Test Case Id"]
-            ):
-                # save the previous test case before starting data collection for new one
-                raw_data.append(
-                    {
-                        "Test Case ID": current_test_case["Test Case Id"],
-                        "Test Case Name": current_test_case["Test Case Name"],
-                        "Area": current_test_case["Feature"],
-                        "Level": current_test_case["Level"],
-                        "Test Steps": current_test_steps,
-                        "Test Execution Id": None,
-                        "Test Status": None,
-                    }
-                )
-                # reset current_test_steps
-                current_test_steps = []
-
-            # Update the current test case and add the step
-            current_test_case = row_data
-            current_test_steps.append(
-                [row_data["Test Step Description"], row_data["Expected Results"]]
-            )
-
-        # add the last test case to the raw_data
-        if current_test_case:
-            raw_data.append(
-                {
+            if current_test_case and row_data["Test Case Id"] != current_test_case["Test Case Id"]:
+                raw_data.append({
                     "Test Case ID": current_test_case["Test Case Id"],
                     "Test Case Name": current_test_case["Test Case Name"],
                     "Area": current_test_case["Feature"],
@@ -344,12 +209,30 @@ class PyTestCasesApp(QWidget):
                     "Test Steps": current_test_steps,
                     "Test Execution Id": None,
                     "Test Status": None,
-                }
-            )
+                })
+                current_test_steps = []
 
-        # set test_cases
+            current_test_case = row_data
+            current_test_steps.append([row_data["Test Step Description"], row_data["Expected Results"]])
+
+        if current_test_case:
+            raw_data.append({
+                "Test Case ID": current_test_case["Test Case Id"],
+                "Test Case Name": current_test_case["Test Case Name"],
+                "Area": current_test_case["Feature"],
+                "Level": current_test_case["Level"],
+                "Test Steps": current_test_steps,
+                "Test Execution Id": None,
+                "Test Status": None,
+            })
+
         self.test_cases += raw_data
-        
-        # remove empty results from end of the file
+
         while self.test_cases[-1]["Test Case ID"] is None:
             self.test_cases.pop()
+
+
+if __name__ == "__main__":
+    app = PyTestCasesApp()
+    app.mainloop()
+
