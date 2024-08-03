@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from time import time
 from tkinter import (
-    Tk, StringVar, Label, Entry, Button, Frame, filedialog, messagebox, ttk
+    END, Tk, StringVar, Label, Entry, Button, Frame, filedialog, messagebox, ttk, Misc, Text
 )
 from openpyxl import load_workbook
 
@@ -13,6 +13,64 @@ class Colors:
     yellow = "#ffdfba"
     gray = "#ababab"
     status_bg = "#6b6967"
+
+
+class Table:
+    def __init__(self, root: Misc, column_headers:list, width:int=50):
+        self.root = root
+        self.table_width = width
+        self.column_count = len(column_headers)
+        self.column_headers = column_headers
+        self.test_case_rows = 1
+        self.previous_row_h = 0
+        self.table = [[]]
+        self.row_height = 1
+        self.x = 0
+        self.y = 0
+        self.clear()
+    
+    def clear(self):
+        self.previous_row_h = 0
+        self.test_case_rows = 10
+        for row in self.table:
+            for cell in row:
+                #cell.pack_forget()
+                cell.grid_remove()
+                print(cell)
+        self._create_row(self.column_headers)
+        self.x = 1
+
+    def insert(self, row:list):
+        if len(row) != self.column_count:
+            messagebox.showerror(f"Provided data contained {len(row)}, expected {self.column_count}")
+            return
+        self._create_row(row)
+
+    def _create_row(self, row:list[str]):
+        xx = 0
+        misc_row = []
+        # calculate height
+        max_lines = 1
+        for column in row:
+            column_lines = column.count("\n")
+            max_lines = max(max_lines, column_lines)
+        height = self.row_height * max_lines
+        # Create text elements
+        for column in row:
+            cell = Text(
+                        self.root,
+                        width=self.table_width,
+                        height=height,
+                        )
+            cell.insert(END, column)
+            cell.grid(row=self.x+self.test_case_rows, column=self.y, pady=(self.previous_row_h*xx))
+            self.y += 1
+            misc_row.append(cell)
+        self.test_case_rows += self.previous_row_h
+        self.table.append(misc_row)
+        self.y = 0
+        self.previous_row_h = height * 20
+            
 
 
 class PyTestCasesApp(Tk):
@@ -60,11 +118,15 @@ class PyTestCasesApp(Tk):
         self.test_status_label.grid(row=3, column=1, columnspan=3, padx=0, pady=5, sticky="W")
 
         # setup Test Case Table
-        self.test_case_table = ttk.Treeview(self, columns=("Description", "Expected Result"), show='headings')
-        self.test_case_table.heading("Description", text="Description")
-        self.test_case_table.heading("Expected Result", text="Expected Result")
-        self.test_case_table.column("Description", width=300)
-        self.test_case_table.grid(row=4, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
+        #self.test_case_table = ttk.Treeview(self, columns=("Description", "Expected Result"), show='headings')
+        # TODO labels for Test Case Table
+        self.table_test_case_frame = Frame(self)
+        self.test_case_table = Table(self.table_test_case_frame, column_headers=["Description", "Expected Result"])
+        self.table_test_case_frame.grid(row=4, column=0, columnspan=3, padx=5, pady=5)
+        #self.test_case_table.heading("Description", text="Description")
+        #self.test_case_table.heading("Expected Result", text="Expected Result")
+        #self.test_case_table.column("Description", width=300)
+        #self.test_case_table.grid(row=4, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
 
         # setup Buttons and their functions
         self.button_frame = Frame(self)
@@ -148,17 +210,17 @@ class PyTestCasesApp(Tk):
         #self.test_case_title.config(text=f"{test_case['Test Case ID']} - {test_case['Test Case Name']}")
         self.setTestStatus(test_case["Test Status"])
 
-        for row in self.test_case_table.get_children():
-            self.test_case_table.delete(row)
+        self.test_case_table.clear()
+        #for row in self.test_case_table.get_children():
+        #    self.test_case_table.delete(row)
 
         for step in test_case["Test Steps"]:
-            lines_step = step[0].count("\n")
-            lines_expected = step[1].count("\n")
-            rowheight = max(lines_step, lines_expected) * 20
-            rowheight = rowheight if rowheight else 20
-            print(step[0],rowheight)
-            self.style.configure("Treeview", rowheight=rowheight)
-            self.test_case_table.insert("", "end", values=step)
+            #lines_step = step[0].count("\n")
+            #lines_expected = step[1].count("\n")
+            #rowheight = max(lines_step, lines_expected) * 20
+            #rowheight = rowheight if rowheight else 20
+            #print(step[0],rowheight)
+            self.test_case_table.insert(step)
 
     def updateTestStatus(self, status):
         self.test_cases[self.current_test_index]["Test Status"] = status
