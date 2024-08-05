@@ -4,6 +4,7 @@ from time import time
 from tkinter import (
     END, Tk, StringVar, Label, Entry, Button, Frame, filedialog, messagebox, ttk, Misc, Text
 )
+from tkinter.constants import WORD
 
 class Colors:
     black = "black"
@@ -15,9 +16,12 @@ class Colors:
 
 
 class Table:
-    def __init__(self, root: Misc, column_headers:list, width:int=50):
+    def __init__(self, root: Misc, column_headers:list, column_width:int):
+        r"""
+        - column_width - in characters, e.g. "word" has 4 characters
+        """
         self.root = root
-        self.table_width = width
+        self.table_width = column_width
         self.column_count = len(column_headers)
         self.column_headers = column_headers
         self.test_case_rows = 1
@@ -45,20 +49,28 @@ class Table:
         self._create_row(row)
 
     def _create_row(self, row:list[str]):
-        xx = 0
+        xx = 0 # just to keep previous_r_h calculation at end inactive
         misc_row = []
-        # calculate height
+        # calculate row height
         max_lines = 1
+        max_characters = 0
         for column in row:
-            column_lines = column.count("\n")
+            column_lines = column.count("\n") + 1
+            column_rows = column.split("\n")
+            for c_row in column_rows:
+                row_len = len(c_row)
+                if row_len > self.table_width:
+                    column_lines += (row_len // 40)
+            max_characters = max(max_characters, len(column))
             max_lines = max(max_lines, column_lines)
-        height = self.row_height * max_lines
+        height = self.row_height * (max_lines)
         # Create text elements
         for column in row:
             cell = Text(
                         self.root,
                         width=self.table_width,
                         height=height,
+                        wrap=WORD
                         )
             cell.insert(END, column)
             cell.grid(row=self.x+self.test_case_rows, column=self.y, pady=(self.previous_row_h*xx))
@@ -67,15 +79,16 @@ class Table:
         self.test_case_rows += self.previous_row_h
         self.table.append(misc_row)
         self.y = 0
-        self.previous_row_h = height * 20
+        self.previous_row_h = height * 20  + (max_characters//self.table_width)
             
 
 
 class PyTestCasesApp(Tk):
-    def __init__(self, start_maximized: bool = False):
+    def __init__(self, start_maximized: bool = False, table_width:int=80):
         super().__init__()
         self.show_save_info = True
         self.test_cases = []
+        self.column_width = int(table_width/2)
         self.current_test_index = 0
         self.test_execution_id = None
         self.start_maximized = start_maximized
@@ -119,7 +132,7 @@ class PyTestCasesApp(Tk):
         #self.test_case_table = ttk.Treeview(self, columns=("Description", "Expected Result"), show='headings')
         # TODO labels for Test Case Table
         self.table_test_case_frame = Frame(self)
-        self.test_case_table = Table(self.table_test_case_frame, column_headers=["Description", "Expected Result"])
+        self.test_case_table = Table(self.table_test_case_frame, column_headers=["Description", "Expected Result"], column_width=self.column_width)
         self.table_test_case_frame.grid(row=4, column=0, columnspan=3, padx=5, pady=5)
         #self.test_case_table.heading("Description", text="Description")
         #self.test_case_table.heading("Expected Result", text="Expected Result")
