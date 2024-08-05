@@ -16,7 +16,7 @@ def myText(master:Misc, stylesheet, width,height, wrap) -> Text:
             width=width,
             wrap=wrap,
             height=height,
-            border=0,
+            border=1,
             )
 def myEntry(master:Misc, stylesheet, width) -> Entry:
     return Entry(
