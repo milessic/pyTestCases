@@ -104,6 +104,7 @@ class PastelTheme:
 selectedStyle = DarkBlueTheme
 class Styles:
     def __init__(self, theme_name:str):
+        default_theme = BlackTheme
         match theme_name.lower():
             case "darkblue":
                 stylesheet = DarkBlueTheme
@@ -120,10 +121,10 @@ class Styles:
             case "pastel":
                 stylesheet = PastelTheme
             case "none":
-                stylesheet = DarkBlueTheme
+                stylesheet = default_theme
             case _:
                 print(f"Theme not supported - '{theme_name}'!")
-                stylesheet = DarkBlueTheme
+                stylesheet = default_theme
         for k,v in stylesheet.__dict__.items():
             if k.startswith("__"):
                 continue
