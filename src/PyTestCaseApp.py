@@ -6,20 +6,58 @@ from tkinter import (
 )
 from tkinter.constants import WORD
 
+def myText(master:Misc, stylesheet, width,height, wrap) -> Text:
+    return Text(
+            master=master,
+            bg=stylesheet.txt_bg,
+            fg=stylesheet.txt_fg,
+            highlightcolor=stylesheet.bg,
+            highlightbackground=stylesheet.bg,
+            width=width,
+            wrap=wrap,
+            height=height,
+            border=0,
+            )
+def myEntry(master:Misc, stylesheet, width) -> Entry:
+    return Entry(
+            master=master,
+            background=stylesheet.txt_bg,
+            highlightcolor=stylesheet.bg,
+            highlightbackground=stylesheet.bg,
+            width=width,
+            fg=stylesheet.txt_fg,
+            border=0
+            )
+
 class Colors:
     black = "black"
     red = "#ffb3ba"
     green = "#baffc9"
     yellow = "#ffdfba"
     gray = "#ababab"
+
+
+class DarkBlueTheme:
+    bg = "#22303c"
+    highlight = "#9DB2BF"
+    fg = "#ffffff"
+    txt_bg ="#FFFDFA" 
+    txt_fg ="#15202b" 
+    btn_highlight="#ffffff"
     status_bg = "#6b6967"
 
 
+selectedStyle = DarkBlueTheme
+
+
+
+
 class Table:
-    def __init__(self, root: Misc, column_headers:list, column_width:int):
+    def __init__(self, root: Misc, column_headers:list, column_width:int, stylesheet):
         r"""
         - column_width - in characters, e.g. "word" has 4 characters
         """
+        self.s = stylesheet
         self.root = root
         self.table_width = column_width
         self.column_count = len(column_headers)
@@ -60,14 +98,15 @@ class Table:
             for c_row in column_rows:
                 row_len = len(c_row)
                 if row_len > self.table_width:
-                    column_lines += (row_len // 40)
+                    column_lines += (row_len // self.table_width)
             max_characters = max(max_characters, len(column))
             max_lines = max(max_lines, column_lines)
         height = self.row_height * (max_lines)
         # Create text elements
         for column in row:
-            cell = Text(
+            cell = myText(
                         self.root,
+                        stylesheet=self.s,
                         width=self.table_width,
                         height=height,
                         wrap=WORD
@@ -84,13 +123,17 @@ class Table:
 
 
 class PyTestCasesApp(Tk):
-    def __init__(self, start_maximized: bool = False, table_width:int=80):
+    def __init__(self, start_maximized: bool = False, table_width:int=60):
         super().__init__()
+        self.resizable(0, 0) 
+        self.s = selectedStyle
+        self.config(bg=self.s.bg)
         self.show_save_info = True
         self.test_cases = []
         self.column_width = int(table_width/2)
         self.current_test_index = 0
         self.test_execution_id = None
+        #self.geometry("520x300")
         self.start_maximized = start_maximized
         self.initUI()
         self.style = ttk.Style(self)
@@ -103,67 +146,120 @@ class PyTestCasesApp(Tk):
         self.title("pyTestCases")
 
         # setup Top Panel
-        self.execution_id_label = Label(self, text="Test Execution ID:")
-        self.execution_id_label.grid(row=0, column=0, padx=5, pady=5)
+        self.execution_id_label = self.myLabel(self, text="Test Execution ID:")
+        self.execution_id_label.grid(row=0, column=0, padx=5, pady=5, sticky="W")
 
-        self.execution_id_input = Entry(self)
-        self.execution_id_input.grid(row=0, column=1, padx=5, pady=5)
+        self.execution_id_input = myEntry(self, self.s, 30)
+        self.execution_id_input.grid(row=0, column=1, columnspan=1,padx=10, pady=5)
 
-        self.execution_id_button = Button(self, text="Load Tests", command=self.loadTests)
-        self.execution_id_button.grid(row=0, column=2, padx=5, pady=5)
+        self.execution_id_button = self.myButton(self, text="Load Tests", command=self.loadTests)
+        self.execution_id_button.grid(row=0, column=2, padx=0, pady=5, sticky="W")
 
         # setup Dropdown
         self.test_case_var = StringVar()
-        self.test_case_dropdown = ttk.Combobox(self, textvariable=self.test_case_var)
-        self.test_case_dropdown.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        self.test_case_dropdown = ttk.Combobox(self, textvariable=self.test_case_var, width=40)
+        self.test_case_dropdown.grid(row=1, column=0, columnspan=2, padx=5,pady=5, sticky="W")
         self.test_case_dropdown.bind("<<ComboboxSelected>>", self.displayTestCase)
 
         # setup Test Case Title
-        #self.test_case_title = Label(self, text="Select a test case")
+        #self.test_case_title = self.myLabel(self, text="Select a test case")
         #self.test_case_title.grid(row=2, column=0, columnspan=3, padx=5, pady=5)
 
         # setup Test Case Status
-        self.test_status_info_label = Label(self, text="Test Status:")
-        self.test_status_info_label.grid(row=3, column=0, columnspan=3, padx=0, pady=5, sticky="W")
-        self.test_status_label = Label(self, text="")
-        self.test_status_label.grid(row=3, column=1, columnspan=3, padx=0, pady=5, sticky="W")
+        self.test_status_info_label = self.myLabel(self, text="Test Status:")
+        self.test_status_info_label.grid(row=1, column=1,  padx=0, pady=5, sticky="E")
+        self.test_status_label = self.myLabel(self, text="")
+        self.test_status_label.grid(row=1, column=2,  padx=5, pady=5, sticky="we")
+
+
 
         # setup Test Case Table
         #self.test_case_table = ttk.Treeview(self, columns=("Description", "Expected Result"), show='headings')
         # TODO labels for Test Case Table
-        self.table_test_case_frame = Frame(self)
-        self.test_case_table = Table(self.table_test_case_frame, column_headers=["Description", "Expected Result"], column_width=self.column_width)
-        self.table_test_case_frame.grid(row=4, column=0, columnspan=3, padx=5, pady=5)
+        self.table_test_case_frame = self.myFrame(self)
+        self.test_table_column_step = self.myLabel(self.table_test_case_frame, text="Test Step", bold=True)
+        self.test_table_column_expected = self.myLabel(self.table_test_case_frame, text="Expected Result", bold=True)
+        self.test_case_table = Table(self.table_test_case_frame, column_headers=["Description", "Expected Result"], column_width=self.column_width, stylesheet=self.s)
+
+        self.test_table_column_step.grid(row=0,column=0)
+        self.test_table_column_expected.grid(row=0,column=1)
+        self.table_test_case_frame.grid(row=5, column=0, columnspan=3, padx=5, pady=5)
         #self.test_case_table.heading("Description", text="Description")
         #self.test_case_table.heading("Expected Result", text="Expected Result")
         #self.test_case_table.column("Description", width=300)
         #self.test_case_table.grid(row=4, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
 
         # setup Buttons and their functions
-        self.button_frame = Frame(self)
-        self.button_frame.grid(row=5, column=0, columnspan=3, padx=5, pady=5)
+        self.button_frame = self.myFrame(self)
+        self.button_frame.grid(row=4, column=0, columnspan=3, padx=0, pady=5)
 
-        self.pass_button = Button(self.button_frame, text="PASS", bg=Colors.green, fg="black",
+        self.pass_button = self.myButton(self.button_frame, text="PASS", bg=Colors.green, fg="black",
                                   command=lambda: self.updateTestStatus("PASS"))
         self.pass_button.pack(side="left", padx=5, pady=5)
 
-        self.fail_button = Button(self.button_frame, text="FAIL", bg=Colors.red, fg="black",
+        self.fail_button = self.myButton(self.button_frame, text="FAIL", bg=Colors.red, fg="black",
                                   command=lambda: self.updateTestStatus("FAIL"))
         self.fail_button.pack(side="left", padx=5, pady=5)
 
-        self.blocked_button = Button(self.button_frame, text="BLOCKED", bg=Colors.yellow, fg="black",
+        self.blocked_button = self.myButton(self.button_frame, text="BLOCKED", bg=Colors.yellow, fg="black",
                                      command=lambda: self.updateTestStatus("BLOCKED"))
         self.blocked_button.pack(side="left", padx=5, pady=5)
 
-        self.not_tested_button = Button(self.button_frame, text="NOT TESTED", bg=Colors.gray, fg="black",
+        self.not_tested_button = self.myButton(self.button_frame, text="NOT TESTED", bg=Colors.gray, fg="black",
                                         command=lambda: self.updateTestStatus("NOT TESTED"))
         self.not_tested_button.pack(side="left", padx=5, pady=5)
 
-        self.prev_button = Button(self.button_frame, text="Previous", command=self.previousTestCase)
+        self.prev_button = self.myButton(self.button_frame, text="Previous", command=self.previousTestCase)
         self.prev_button.pack(side="left", padx=5, pady=5)
 
-        self.next_button = Button(self.button_frame, text="Next", command=self.nextTestCase)
+        self.next_button = self.myButton(self.button_frame, text="Next", command=self.nextTestCase)
         self.next_button.pack(side="left", padx=5, pady=5)
+
+    def myLabel(self, master:Misc, text:str, bold:bool=False) -> Label:
+        if bold:
+            return Label(
+                master=master,
+                text=text,
+                bg=self.s.bg,
+                fg=self.s.fg,
+                font="bold"
+                )
+        else:
+            return Label(
+                master=master,
+                text=text,
+                bg=self.s.bg,
+                fg=self.s.fg,
+                )
+
+    def myCombobox(self, master:Misc, textvariable, width) -> ttk.Combobox:
+        return ttk.Combobox(
+                master=master,
+                textvariable=textvariable,
+                width=width,
+                background=self.s.txt_bg,
+                cursor="cross"
+
+                
+                )
+
+    def myButton(self, master, text:str, command, fg=None, bg=None) -> Button:
+        return Button(
+                master=master,
+                text=text,
+                command=command,
+                background=self.s.bg if bg is None else bg,
+                fg=self.s.fg if fg is None else fg,
+                highlightcolor=self.s.btn_highlight,
+                highlightbackground=self.s.btn_highlight,
+                activebackground=self.s.btn_highlight,
+                )
+    def myFrame(self, master) -> Frame:
+        return Frame(
+                master=master,
+                bg=self.s.bg,
+                )
+
 
     def setTestStatus(self, test_status: str):
         status = str(test_status).upper()
@@ -176,7 +272,7 @@ class PyTestCasesApp(Tk):
                 color = Colors.yellow
             case _:
                 color = Colors.gray
-        self.test_status_label.config(text=status, fg=color, bg=Colors.status_bg)
+        self.test_status_label.config(text=status, fg=color, bg=self.s.status_bg)
         return f"""<b style="color: {color};">{status}</b>"""
 
 
