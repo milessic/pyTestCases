@@ -35,7 +35,6 @@ class Table:
             for cell in row:
                 #cell.pack_forget()
                 cell.grid_remove()
-                print(cell)
         self._create_row(self.column_headers)
         self.x = 1
 
@@ -164,9 +163,8 @@ class PyTestCasesApp(Tk):
                 color = Colors.yellow
             case _:
                 color = Colors.gray
-        self.test_status_label.config(text=test_status, fg=color, bg=Colors.status_bg)
+        self.test_status_label.config(text=status, fg=color, bg=Colors.status_bg)
         return f"""<b style="color: {color};">{status}</b>"""
-        print(test_status)
 
 
     def loadTests(self):
@@ -220,6 +218,7 @@ class PyTestCasesApp(Tk):
             #rowheight = rowheight if rowheight else 20
             #print(step[0],rowheight)
             self.test_case_table.insert(step)
+        self.setTestStatus(test_case["Test Status"])
 
     def updateTestStatus(self, status):
         self.test_cases[self.current_test_index]["Test Status"] = status
