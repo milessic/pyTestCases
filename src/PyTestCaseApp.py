@@ -4,7 +4,6 @@ from time import time
 from tkinter import (
     END, Tk, StringVar, Label, Entry, Button, Frame, filedialog, messagebox, ttk, Misc, Text
 )
-from openpyxl import load_workbook
 
 class Colors:
     black = "black"
@@ -265,6 +264,12 @@ class PyTestCasesApp(Tk):
             self.test_cases = json.load(file)
 
     def loadFromXlsx(self, file_path: str):
+        try:
+            from openpyxl import load_workbook
+        except ImportError:
+            err_msg = "Could not load openpyxl!\nInstall openpyxl or import json file!"
+            messagebox.showerror(title="PyTestCases Error: Could not load Xlsx", message=err_msg)
+            raise ImportError(err_msg)
         wb = load_workbook(file_path)
         ws = wb.active
 
