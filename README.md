@@ -27,25 +27,67 @@ Example input data:
 ```
 
 ## Excel format
+Tool will use ``TEST CASES`` worksheet by default
+
 ```
 <column 3>| Test Case Id | Feature | Level | Test Case Name | Test Steps | Preconditions | Test Step Description | Expected Results |
 <column 4+> {Test Cases Data}
 ```
 
+Both ``Json`` or ``Excel`` files will be reffered as ``Database`` further.
+
+## Supported fields:
+| __Field__ | __Desciption__ | __Display__ |
+| ---- | --- | --- |
+| ``Test Case Id``* | ``int``, must be unique | Displayed in the title and Test Dropdown |
+| ``Test Case Name``* | ``str`` | Displayed in the title and Test Dropdown |
+| ``Area`` | ``str`` | Displayed in the dropdown, Tests may be filtered by ``Area`` |
+| ``Level`` | ``str``  | eg. ``Smoke``, ``Regression`` |
+| ``Test Step Description``* | ``str`` | Displayed under ``Test Step`` column |
+| ``Expected Result``*  | ``str`` | Displayed under ``Expected Result`` column |
+| ``Actual Result`` | ``str`` | Displayed under ``Actual Result`` column |
+| ``Notes`` | ``str`` | Notes, displayed as small, blue "N" button, if clicked, it is opened |
+| ``Test Execution Id`` | ``str`` or ``null`` | Displayed under ``Test Execution Id`` field | 
+| ``Test Status`` | ``str`` or ``null`` that can be converted to Status (``PASS``, ``FAIL``, ``BLOCKED``, ``NOT TESTED``, ``null``)  | Displayed under ``Test Status`` element |
+| ``Assignee`` | ``str`` or ``null`` | Displayed in the Assignee section, but only if there is at least 1 non-null value in the database |
+| ``Gsheet Document Id``| ``str`` | Used in ``gSheet Export``, can be in all cells, can be in some, can be in one, but it will work only if there is one of them |
+
+All fields marked with ``*`` are mandatory
+
+``Test Step Description``, ``Expected Result`` and ``Actual Result`` will be merged to ``Test Steps`` as list of lists ``[[description], [expected], [actual]]``.
+
+## UX and modulity
+Application supports various focus modes.
+
+Top section can be collapsed (from ``Test Execution Id`` to ``Test Dropdown`` and ``Test Status``)
+
+``Actual Result`` column can be colapsed or enrolled
 # Saving and loading sessions
 Sessinos are saved after clicking one of ``Status button`` at the bottom.
 
-All generated ``output files`` have first item set as ``"from_output"``, which changes the way the program saves such file.
+All generated ``output files`` have first item set as ``"output_"``, which changes the way the program saves such file.
 
 It is possible to open already saved ``output file``, but then there is no possibility to change ``Test Execution ID``.
 
-# Roadmap
-- [ ] Add Preconditions
-- [ ] Make xlsx importing more flexible
-- [ ] Add Test Case Creation
-- [ ] Add Test Case Edidtion
-- [ ] Add Test Case filtering
-- [ ] Add Test Report functionaltiy
-- [ ] Add Support for light mode ( currently pastel colors are to pastel and barely visible on light mode )
-- [x] Add support of openpyxl optional
+## Exports
+### Report MD
+After clicking clicking ``Export`` Menu and selecting ``Report MD``, the Markdown report will be generated out of current execution.
+
+### Report Jira
+After clicking clicking ``Export`` Menu and selecting ``Report Jira``, the Jira Markdown report will be generated out of current execution.
+
+### Report HTML
+After clicking clicking ``Export`` Menu and selecting ``Report HTML``, the HTML report will be generated out of current execution.
+
+### Xlsx
+After clicking clicking ``Export`` Menu and selecting ``Xlsx``, the Xlsx file will be generated, with no formatting, just data
+
+### Csv
+After clicking clicking ``Export`` Menu and selecting ``Csv``, the Xlsx file will be generated, with no formatting, just data
+
+### gSheet
+After clicking clicking ``Export`` Menu and selecting ``gSheet``, the Xlsx file will create a new Sheet in Gsheet Document
+> [!WARNING]
+> If there is no unique entry for ``Gsheet Document Id`` field, it will ask the user for gSheet Docuemnt Id
+Before it will populate gSheet with new worksheet, it will ask for confirmation with gSheet Document Name
 
