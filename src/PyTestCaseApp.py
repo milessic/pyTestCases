@@ -2,209 +2,22 @@ import json
 from pathlib import Path
 from time import time
 from tkinter import (
-    END, Tk, StringVar, Label, Entry, Button, Frame, filedialog, messagebox, ttk, Misc, Text
+    END, Tk, StringVar, Label, Entry, Button, Frame, filedialog, messagebox, ttk, Misc, Text, PhotoImage
 )
 from tkinter.constants import WORD
-
-def myText(master:Misc, stylesheet, width,height, wrap) -> Text:
-    return Text(
-            master=master,
-            bg=stylesheet.txt_bg,
-            fg=stylesheet.txt_fg,
-            highlightcolor=stylesheet.bg,
-            highlightbackground=stylesheet.bg,
-            width=width,
-            wrap=wrap,
-            height=height,
-            border=1,
-            )
-def myEntry(master:Misc, stylesheet, width) -> Entry:
-    return Entry(
-            master=master,
-            background=stylesheet.txt_bg,
-            highlightcolor=stylesheet.bg,
-            highlightbackground=stylesheet.bg,
-            width=width,
-            fg=stylesheet.txt_fg,
-            border=0
-            )
-
-class Colors:
-    black = "black"
-    red = "#ffb3ba"
-    green = "#baffc9"
-    yellow = "#ffdfba"
-    gray = "#ababab"
-
-
-class LightGrayTheme:
-    bg = "#f0f0f0"
-    highlight = "#d9d9d9"
-    fg = "#333333"
-    txt_bg = "#ffffff"
-    txt_fg = "#4f4f4f"
-    btn_highlight = "#cccccc"
-    status_bg = "#e6e6e6"
-
-class BlackTheme:
-    bg = "#000000"
-    highlight = "#1a1a1a"
-    fg = "#ffffff"
-    txt_bg = "#2b2b2b"
-    txt_fg = "#eaeaea"
-    btn_highlight = "#4d4d4d"
-    status_bg = "#151515"
-
-class WhiteTheme:
-    bg = "#ffffff"
-    highlight = "#f2f2f2"
-    fg = "#000000"
-    txt_bg = "#e6e6e6"
-    txt_fg = "#333333"
-    btn_highlight = "#cccccc"
-    status_bg = "#f7f7f7"
-
-class BlueTheme:
-    bg = "#007acc"
-    highlight = "#005999"
-    fg = "#ffffff"
-    txt_bg = "#cce7ff"
-    txt_fg = "#003366"
-    btn_highlight = "#66b2ff"
-    status_bg = "#004080"
-
-class RedTheme:
-    bg = "#b30000"
-    highlight = "#800000"
-    fg = "#ffffff"
-    txt_bg = "#ffcccc"
-    txt_fg = "#330000"
-    btn_highlight = "#ff6666"
-    status_bg = "#660000"
-
-class DarkBlueTheme:
-    bg = "#22303c"
-    highlight = "#9DB2BF"
-    fg = "#ffffff"
-    txt_bg ="#FFFDFA" 
-    txt_fg ="#15202b" 
-    btn_highlight="#ffffff"
-    status_bg = "#6b6967"
-
-class PastelTheme:
-    bg = "#ffd1dc"
-    highlight = "#ffb3c1"
-    fg = "#4b0082"
-    txt_bg = "#fff0f5"
-    txt_fg = "#800080"
-    btn_highlight = "#ff69b4"
-    status_bg = "#ff80bf"
-
-
-selectedStyle = DarkBlueTheme
-class Styles:
-    def __init__(self, theme_name:str):
-        default_theme = BlackTheme
-        match theme_name.lower():
-            case "darkblue":
-                stylesheet = DarkBlueTheme
-            case "lightgray":
-                stylesheet = LightGrayTheme 
-            case "black":
-                stylesheet = BlackTheme
-            case "white":
-                stylesheet = WhiteTheme
-            case "blue":
-                stylesheet = BlueTheme
-            case "red":
-                stylesheet = RedTheme
-            case "pastel":
-                stylesheet = PastelTheme
-            case "none":
-                stylesheet = default_theme
-            case _:
-                print(f"Theme not supported - '{theme_name}'!")
-                stylesheet = default_theme
-        for k,v in stylesheet.__dict__.items():
-            if k.startswith("__"):
-                continue
-            setattr(self, k,v)
-
-
-class Table:
-    def __init__(self, root: Misc, column_headers:list, column_width:int, stylesheet):
-        r"""
-        - column_width - in characters, e.g. "word" has 4 characters
-        """
-        self.s = stylesheet
-        self.root = root
-        self.table_width = column_width
-        self.column_count = len(column_headers)
-        self.column_headers = column_headers
-        self.test_case_rows = 1
-        self.previous_row_h = 0
-        self.table = [[]]
-        self.row_height = 1
-        self.x = 0
-        self.y = 0
-        self.clear()
-    
-    def clear(self):
-        self.previous_row_h = 0
-        self.test_case_rows = 10
-        for row in self.table:
-            for cell in row:
-                #cell.pack_forget()
-                cell.grid_remove()
-        self._create_row(self.column_headers)
-        self.x = 1
-
-    def insert(self, row:list):
-        if len(row) != self.column_count:
-            messagebox.showerror(f"Provided data contained {len(row)}, expected {self.column_count}")
-            return
-        self._create_row(row)
-
-    def _create_row(self, row:list[str]):
-        xx = 0 # just to keep previous_r_h calculation at end inactive
-        misc_row = []
-        # calculate row height
-        max_lines = 1
-        max_characters = 0
-        for column in row:
-            column_lines = column.count("\n") + 1
-            column_rows = column.split("\n")
-            for c_row in column_rows:
-                row_len = len(c_row)
-                if row_len > self.table_width:
-                    column_lines += (row_len // self.table_width)
-            max_characters = max(max_characters, len(column))
-            max_lines = max(max_lines, column_lines)
-        height = self.row_height * (max_lines)
-        # Create text elements
-        for column in row:
-            cell = myText(
-                        self.root,
-                        stylesheet=self.s,
-                        width=self.table_width,
-                        height=height,
-                        wrap=WORD
-                        )
-            cell.insert(END, column)
-            cell.grid(row=self.x+self.test_case_rows, column=self.y, pady=(self.previous_row_h*xx))
-            self.y += 1
-            misc_row.append(cell)
-        self.test_case_rows += self.previous_row_h
-        self.table.append(misc_row)
-        self.y = 0
-        self.previous_row_h = height * 20  + (max_characters//self.table_width)
-            
+from src.models import TestCaseModel
+from src.styles import Styles, Colors
+from src.Elements import myText, myEntry, Table
 
 
 class PyTestCasesApp(Tk):
-    def __init__(self, start_maximized: bool = False, table_width:int=60, theme:str | None = None):
+    def __init__(self, start_maximized: bool = False, table_width:int=60, theme:str | None = None, actual_results_displayed=True):
         super().__init__()
+        self.app_name = "PyTestCases"
+        self.editing_disabled = False
+        self.actual_results_displayed = actual_results_displayed
         self.resizable(0, 0) 
+        self.pixel = PhotoImage()
         theme = str(theme)
         self.s = Styles(theme_name=theme)
         self.config(bg=self.s.bg)
@@ -218,12 +31,13 @@ class PyTestCasesApp(Tk):
         self.initUI()
         self.style = ttk.Style(self)
         if self.start_maximized:
-            print("Window maximized Not supported!")
+            messagebox.showwarning(title=self.app_name, message="Window maximized Not supported!")
             #self.attributes('-fullscreen', True)
+        self.control_actual_result()
 
     def initUI(self):
         # setup Window Title
-        self.title("pyTestCases")
+        self.title(self.app_name)
 
         # setup Top Panel
         self.execution_id_label = self.myLabel(self, text="Test Execution ID:")
@@ -255,19 +69,18 @@ class PyTestCasesApp(Tk):
 
         # setup Test Case Table
         #self.test_case_table = ttk.Treeview(self, columns=("Description", "Expected Result"), show='headings')
-        # TODO labels for Test Case Table
         self.table_test_case_frame = self.myFrame(self)
         self.test_table_column_step = self.myLabel(self.table_test_case_frame, text="Test Step", bold=True)
-        self.test_table_column_expected = self.myLabel(self.table_test_case_frame, text="Expected Result", bold=True)
-        self.test_case_table = Table(self.table_test_case_frame, column_headers=["Description", "Expected Result"], column_width=self.column_width, stylesheet=self.s)
+        self.test_table_column_expected = self.myLabel(self.table_test_case_frame, text="Expected Results", bold=True)
+        self.test_table_column_actual = self.myLabel(self.table_test_case_frame, text="Actual Results", bold=True)
+        self.test_case_table = Table(self.table_test_case_frame, column_headers=["Description", "Expected Result", "Actual Result"], column_width=self.column_width, stylesheet=self.s)
+        self.test_table_control_actual_btn = self.myButton(self.table_test_case_frame, "-", lambda: self.control_actual_result(), image=True)
 
         self.test_table_column_step.grid(row=0,column=0)
         self.test_table_column_expected.grid(row=0,column=1)
+        self.test_table_column_actual.grid(row=0,column=2)
+        self.test_table_control_actual_btn.place(x=self.column_width*15,y=1)
         self.table_test_case_frame.grid(row=5, column=0, columnspan=3, padx=5, pady=5)
-        #self.test_case_table.heading("Description", text="Description")
-        #self.test_case_table.heading("Expected Result", text="Expected Result")
-        #self.test_case_table.column("Description", width=300)
-        #self.test_case_table.grid(row=4, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
 
         # setup Buttons and their functions
         self.button_frame = self.myFrame(self)
@@ -294,6 +107,23 @@ class PyTestCasesApp(Tk):
 
         self.next_button = self.myButton(self.button_frame, text="Next", command=self.nextTestCase)
         self.next_button.pack(side="left", padx=5, pady=5)
+
+    def control_actual_result(self):
+        if self.actual_results_displayed:
+            self.hide_actual_result()
+        else:
+            self.show_actual_result()
+
+    def hide_actual_result(self):
+        self.test_case_table.hide_actual()
+        self.test_table_column_actual.grid_remove()
+        self.actual_results_displayed = False
+
+    def show_actual_result(self):
+        self.test_case_table.show_actual()
+        self.test_table_column_actual.grid(row=0,column=2)
+        self.displayTestCase()
+        self.actual_results_displayed = True
 
     def myLabel(self, master:Misc, text:str, bold:bool=False) -> Label:
         if bold:
@@ -323,8 +153,18 @@ class PyTestCasesApp(Tk):
                 
                 )
 
-    def myButton(self, master, text:str, command, fg=None, bg=None) -> Button:
+    def myButton(self, master, text:str, command, fg=None, bg=None, image:bool=False,**kwargs) -> Button:
+        if image:
+            btn_image = self.pixel
+            width = 10
+            height = 10
+        else:
+            btn_image = None
+            width = None
+            height = None
+        print(fg, text)
         return Button(
+                image=btn_image,#self.pixel,
                 master=master,
                 text=text,
                 command=command,
@@ -333,6 +173,9 @@ class PyTestCasesApp(Tk):
                 highlightcolor=self.s.btn_highlight,
                 highlightbackground=self.s.btn_highlight,
                 activebackground=self.s.btn_highlight,
+                width=width,
+                height=height,
+                **kwargs
                 )
     def myFrame(self, master) -> Frame:
         return Frame(
@@ -361,12 +204,13 @@ class PyTestCasesApp(Tk):
         self.file_name = Path(file_path).name
 
         if file_path.endswith("xlsx"):
-            self.loadFromXlsx(file_path)
+            raw_data = self.loadXlsx(file_path)
         elif file_path.endswith("json"):
-            self.loadFromJson(file_path)
+            raw_data = self.loadJson(file_path)
         else:
             messagebox.showerror("Error", "File format not supported")
             return
+        self.loadTestsFromRawData(raw_data)
 
         if self.test_cases[0] == "from_output":
             self.file_loaded_from_output = True
@@ -380,7 +224,7 @@ class PyTestCasesApp(Tk):
                 self.execution_id_input.insert(0, self.test_execution_id)
 
         self.test_case_dropdown['values'] = [
-            f"{test_case['Test Case ID']} - {test_case['Test Case Name']}" for test_case in self.test_cases
+            test_case for test_case in self.test_cases
         ]
 
         self.current_test_index = 0
@@ -392,7 +236,7 @@ class PyTestCasesApp(Tk):
         if self.current_test_index == -1:
             return
 
-        test_case = self.test_cases[self.current_test_index]
+        test_case = self.test_cases[self.current_test_index].dict()
         #self.test_case_title.config(text=f"{test_case['Test Case ID']} - {test_case['Test Case Name']}")
         self.setTestStatus(test_case["Test Status"])
 
@@ -400,17 +244,23 @@ class PyTestCasesApp(Tk):
         #for row in self.test_case_table.get_children():
         #    self.test_case_table.delete(row)
 
-        for step in test_case["Test Steps"]:
+        for step, expected, actual, note in zip(
+                test_case["Test Steps"][0],
+                test_case["Test Steps"][1],
+                test_case["Test Steps"][2],
+                test_case["Test Steps"][3],
+                ):
             #lines_step = step[0].count("\n")
             #lines_expected = step[1].count("\n")
             #rowheight = max(lines_step, lines_expected) * 20
             #rowheight = rowheight if rowheight else 20
             #print(step[0],rowheight)
-            self.test_case_table.insert(step)
+            test_row = [step, expected, actual, note]
+            self.test_case_table.insert(test_row)
         self.setTestStatus(test_case["Test Status"])
 
     def updateTestStatus(self, status):
-        self.test_cases[self.current_test_index]["Test Status"] = status
+        self.test_cases[self.current_test_index].set_status(status)
         self.setTestStatus(status)
         self.saveResults()
 
@@ -438,20 +288,55 @@ class PyTestCasesApp(Tk):
         else:
             output_file_name = f"output_{self.test_execution_id}.json"
 
-        self.test_cases.insert(0, "from_output")
+        # read data from tables
+        if not self.editing_disabled:
+            data_from_table = self.test_case_table.return_test_steps()
+            self.test_cases[self.current_test_index].set_test_steps(data_from_table)
+            print(self.test_cases[self.current_test_index].test_steps)
+        #if isinstance(self.test_cases, str):
+        #    test_case_data_to_save.insert(0, self.test_cases[0])
+        test_case_data_to_save = [tc.dict_to_save() for tc in self.test_cases if isinstance(tc, TestCaseModel)]
+        test_case_data_to_save.insert(0, "from_output")
         with open(output_file_name, "w") as file:
-            json.dump(self.test_cases, file, indent=4)
+            json.dump(test_case_data_to_save, file, indent=4)
 
         if self.show_save_info:
             messagebox.showinfo("Info", f"This pop-up is shown once per session!\nResults saved to {output_file_name}")
             self.show_save_info = False
-        self.test_cases.remove("from_output")
+        #self.test_cases.remove("from_output")
 
-    def loadFromJson(self, file_path: str):
+    def loadTestsFromRawData(self, raw_data: list[dict]):
+        for i, test_case in enumerate(raw_data):
+            if isinstance(test_case, str):
+                if test_case == "from_output":
+                    continue
+            try:
+                tc = TestCaseModel(
+                        test_case_id=test_case["Test Case Id"],
+                        test_case_name=test_case["Test Case Name"],
+                        area=test_case["Area"],
+                        level=test_case["Level"],
+                        test_steps=test_case["Test Steps"],
+                        #expected_results=test_case["Test Steps"][1],
+                        #actual_results=test_case["Test Steps"][2] if len(test_case["Test Steps"]) > 2 else None,
+                        #notes=test_case["Test Steps"][3] if len(test_case["Test Steps"]) > 3 else None,
+                        test_status=test_case["Test Status"] if "Test Status" in test_case else None,
+                        preconditions=test_case["Preconditions"] if "Preconditions" in test_case else None,
+                        assignee=test_case["Assignee"] if "Assignee" in test_case else None,
+                        gsheet_document_id=test_case["Gsheet Document Id"] if "Gsheet Document Id" in test_case else None,
+                        )
+                self.test_cases.append(tc)
+            except TypeError as e:
+                messagebox.showwarning(title=self.app_name, message=f"Could not convert '{test_case}' to Test Case due to {e}")
+            except KeyError as e:
+                messagebox.showerror(title=self.app_name, message=f"Could not load test case with index {i} due to {e}!")
+
+    def loadJson(self, file_path: str) -> list[dict]:
         with open(file_path, "r") as file:
-            self.test_cases = json.load(file)
+            data = json.load(file)
+        return data 
 
-    def loadFromXlsx(self, file_path: str):
+    def loadXlsx(self, file_path: str) -> list:
         try:
             from openpyxl import load_workbook
         except ImportError:
@@ -496,10 +381,17 @@ class PyTestCasesApp(Tk):
                 "Test Status": None,
             })
 
+        while raw_data[-1] is None:
+            self.test_cases.pop()
+        return raw_data
         self.test_cases += raw_data
 
-        while self.test_cases[-1]["Test Case ID"] is None:
-            self.test_cases.pop()
+        #while self.test_cases[-1]["Test Case ID"] is None:
+        #    self.test_cases.pop()
+
+
+
+        
 
 
 if __name__ == "__main__":

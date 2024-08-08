@@ -43,6 +43,7 @@ Both ``Json`` or ``Excel`` files will be reffered as ``Database`` further.
 | ``Test Case Name``* | ``str`` | Displayed in the title and Test Dropdown |
 | ``Area`` | ``str`` | Displayed in the dropdown, Tests may be filtered by ``Area`` |
 | ``Level`` | ``str``  | eg. ``Smoke``, ``Regression`` |
+| ``Preconditions`` | ``str`` | Preconditions for whole Test Case |
 | ``Test Step Description``* | ``str`` | Displayed under ``Test Step`` column |
 | ``Expected Result``*  | ``str`` | Displayed under ``Expected Result`` column |
 | ``Actual Result`` | ``str`` | Displayed under ``Actual Result`` column |
