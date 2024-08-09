@@ -4,18 +4,34 @@ from time import time
 from tkinter import (
     END, Tk, StringVar, Label, Entry, Button, Frame, filedialog, messagebox, ttk, Misc, Text, PhotoImage
 )
-from tkinter.constants import WORD
+from tkinter.constants import FIRST, LAST, WORD
 from src.models import TestCaseModel
 from src.styles import Styles, Colors
 from src.Elements import myText, myEntry, Table
 
 
 class PyTestCasesApp(Tk):
-    def __init__(self, start_maximized: bool = False, table_width:int=60, theme:str | None = None, actual_results_displayed=True):
+    def __init__(self,
+                 theme:str | None = None,
+                 actual_results_displayed=True,
+                 always_on_top:bool=True,
+                 column_width:int=30,
+                 preconditions_displayed:bool=True,
+                 default_exports_prefix:str="output_",
+                 column_names_row:int=3,
+                 test_case_data_starting_row:int=4,
+                 xlsx_test_cases_sheet_name:str="TEST CASES"
+                 ):
         super().__init__()
         self.app_name = "PyTestCases"
+        self.xlsx_test_cases_sheet_name = xlsx_test_cases_sheet_name
+        self.default_exports_prefix = default_exports_prefix
         self.editing_disabled = False
+        self.column_names_row=column_names_row
+        self.test_case_data_starting_row = test_case_data_starting_row
         self.actual_results_displayed = actual_results_displayed
+        self.preconditions_displayed = preconditions_displayed
+        self.entroll_actual_results = actual_results_displayed
         self.resizable(0, 0) 
         self.pixel = PhotoImage()
         theme = str(theme)
@@ -23,17 +39,15 @@ class PyTestCasesApp(Tk):
         self.config(bg=self.s.bg)
         self.show_save_info = True
         self.test_cases = []
-        self.column_width = int(table_width/2)
+        self.column_width = int(column_width)
         self.current_test_index = 0
         self.test_execution_id = None
         #self.geometry("520x300")
-        self.start_maximized = start_maximized
         self.initUI()
         self.style = ttk.Style(self)
-        if self.start_maximized:
-            messagebox.showwarning(title=self.app_name, message="Window maximized Not supported!")
-            #self.attributes('-fullscreen', True)
         self.control_actual_result()
+        if always_on_top:
+            self.attributes("-topmost", True)
 
     def initUI(self):
         # setup Window Title
@@ -65,7 +79,17 @@ class PyTestCasesApp(Tk):
         self.test_status_label = self.myLabel(self, text="")
         self.test_status_label.grid(row=1, column=2,  padx=5, pady=5, sticky="we")
 
+        # Setup Preconditions button and display
+        self.preconditions_text_frame = self.myFrame(self)
+        self.preconditions_label = self.myLabel(self.preconditions_text_frame, text="      Preconditions", bold=True)
+        self.preconditions_text = Table(self.preconditions_text_frame, column_headers=[], column_width=50, stylesheet=self.s,) #fixed_grid=[2,0])
+        #self.preconditions_text = myText(self, stylesheet=self.s, width=50, height=3, wrap=WORD)
+        #self.preconditions_text.config(state="disabled")
+        self.preconditions_control_btn = self.myButton(self, "-", command=lambda: self.control_preconditions(), image=True)
 
+        self.preconditions_label.grid(row=2, column=0, sticky="W")
+        self.preconditions_text_frame.grid(row=3, column=0, columnspan=3, sticky="W")
+        self.preconditions_control_btn.place(x=5, y=132)
 
         # setup Test Case Table
         #self.test_case_table = ttk.Treeview(self, columns=("Description", "Expected Result"), show='headings')
@@ -84,7 +108,7 @@ class PyTestCasesApp(Tk):
 
         # setup Buttons and their functions
         self.button_frame = self.myFrame(self)
-        self.button_frame.grid(row=4, column=0, columnspan=3, padx=0, pady=5)
+        self.button_frame.grid(row=2, column=0, columnspan=3, padx=0, pady=5)
 
         self.pass_button = self.myButton(self.button_frame, text="PASS", bg=Colors.green, fg="black",
                                   command=lambda: self.updateTestStatus("PASS"))
@@ -108,31 +132,44 @@ class PyTestCasesApp(Tk):
         self.next_button = self.myButton(self.button_frame, text="Next", command=self.nextTestCase)
         self.next_button.pack(side="left", padx=5, pady=5)
 
+    def control_preconditions(self):
+        if self.preconditions_displayed:
+            self.preconditions_text.hide_whole()
+            self.preconditions_displayed = False
+        else:
+            self.preconditions_text.show_whole()
+            self.preconditions_displayed = True
+
+
     def control_actual_result(self):
         if self.actual_results_displayed:
             self.hide_actual_result()
         else:
             self.show_actual_result()
 
-    def hide_actual_result(self):
+    def hide_actual_result(self, change_status:bool=True):
         self.test_case_table.hide_actual()
         self.test_table_column_actual.grid_remove()
-        self.actual_results_displayed = False
+        if change_status:
+            self.actual_results_displayed = False
 
-    def show_actual_result(self):
-        self.test_case_table.show_actual()
+
+    def show_actual_result(self, change_status:bool=True):
+        #self.test_case_table.show_actual()
         self.test_table_column_actual.grid(row=0,column=2)
-        self.displayTestCase()
-        self.actual_results_displayed = True
+        self.displayTestCase(handle_actual_results=False)
+        if change_status:
+            self.actual_results_displayed = True
 
-    def myLabel(self, master:Misc, text:str, bold:bool=False) -> Label:
+    def myLabel(self, master:Misc, text:str, bold:bool=False, **kwargs) -> Label:
         if bold:
             return Label(
                 master=master,
                 text=text,
                 bg=self.s.bg,
                 fg=self.s.fg,
-                font="bold"
+                font="bold",
+                **kwargs
                 )
         else:
             return Label(
@@ -140,6 +177,7 @@ class PyTestCasesApp(Tk):
                 text=text,
                 bg=self.s.bg,
                 fg=self.s.fg,
+                **kwargs,
                 )
 
     def myCombobox(self, master:Misc, textvariable, width) -> ttk.Combobox:
@@ -162,7 +200,6 @@ class PyTestCasesApp(Tk):
             btn_image = None
             width = None
             height = None
-        print(fg, text)
         return Button(
                 image=btn_image,#self.pixel,
                 master=master,
@@ -212,10 +249,14 @@ class PyTestCasesApp(Tk):
             return
         self.loadTestsFromRawData(raw_data)
 
-        if self.test_cases[0] == "from_output":
+        if raw_data[0] == "from_output":
+            execution_id = self.file_name.removeprefix(self.default_exports_prefix).removesuffix(".json")
+            self.execution_id_input.delete(0, END)
+            self.execution_id_input.insert(0, execution_id)
+            self._update_test_execution_id()
             self.file_loaded_from_output = True
             self.execution_id_input.config(state="disabled")
-            self.test_cases.remove("from_output")
+            #self.test_cases.remove("from_output")
         else:
             self.file_loaded_from_output = False
             current_text_execution = self.execution_id_input.get()
@@ -231,7 +272,7 @@ class PyTestCasesApp(Tk):
         self.test_case_dropdown.current(self.current_test_index)
         self.displayTestCase()
 
-    def displayTestCase(self, event=None):
+    def displayTestCase(self, event=None, handle_actual_results:bool=True):
         self.current_test_index = self.test_case_dropdown.current()
         if self.current_test_index == -1:
             return
@@ -258,6 +299,17 @@ class PyTestCasesApp(Tk):
             test_row = [step, expected, actual, note]
             self.test_case_table.insert(test_row)
         self.setTestStatus(test_case["Test Status"])
+        if not handle_actual_results:
+            return
+        preconditions = test_case["Preconditions"] if test_case["Preconditions"] is not None else ""
+        self.preconditions_text.clear()
+        self.preconditions_text.insert([preconditions])
+
+        #if not self.actual_results_displayed:
+        #    self.show_actual_result(change_status=False)
+        #    print(0)
+        if not self.actual_results_displayed:
+            self.hide_actual_result(change_status=False)
 
     def updateTestStatus(self, status):
         self.test_cases[self.current_test_index].set_status(status)
@@ -276,7 +328,12 @@ class PyTestCasesApp(Tk):
             self.test_case_dropdown.current(self.current_test_index)
             self.displayTestCase()
 
+    def _update_test_execution_id(self):
+        self.test_execution_id = self.execution_id_input.get()
+
+
     def saveResults(self):
+        self._update_test_execution_id()
         self.test_execution_id = self.execution_id_input.get().strip()
 
         if not self.file_loaded_from_output and not self.test_execution_id:
@@ -286,13 +343,12 @@ class PyTestCasesApp(Tk):
         if self.file_loaded_from_output:
             output_file_name = self.file_name
         else:
-            output_file_name = f"output_{self.test_execution_id}.json"
+            output_file_name = f"{self.default_exports_prefix}{self.test_execution_id}.json"
 
         # read data from tables
         if not self.editing_disabled:
             data_from_table = self.test_case_table.return_test_steps()
             self.test_cases[self.current_test_index].set_test_steps(data_from_table)
-            print(self.test_cases[self.current_test_index].test_steps)
         #if isinstance(self.test_cases, str):
         #    test_case_data_to_save.insert(0, self.test_cases[0])
         test_case_data_to_save = [tc.dict_to_save() for tc in self.test_cases if isinstance(tc, TestCaseModel)]
@@ -320,16 +376,18 @@ class PyTestCasesApp(Tk):
                         #expected_results=test_case["Test Steps"][1],
                         #actual_results=test_case["Test Steps"][2] if len(test_case["Test Steps"]) > 2 else None,
                         #notes=test_case["Test Steps"][3] if len(test_case["Test Steps"]) > 3 else None,
-                        test_status=test_case["Test Status"] if "Test Status" in test_case else None,
-                        preconditions=test_case["Preconditions"] if "Preconditions" in test_case else None,
-                        assignee=test_case["Assignee"] if "Assignee" in test_case else None,
-                        gsheet_document_id=test_case["Gsheet Document Id"] if "Gsheet Document Id" in test_case else None,
+                        test_status=test_case.get("Test Status"),
+                        preconditions=test_case.get("Preconditions"), 
+                        assignee=test_case.get("Assignee"),
+                        gsheet_document_id=test_case.get("Gsheet Document Id")
                         )
                 self.test_cases.append(tc)
             except TypeError as e:
-                messagebox.showwarning(title=self.app_name, message=f"Could not convert '{test_case}' to Test Case due to {e}")
+                print(test_case)
+                messagebox.showwarning(title=self.app_name, message=f"Could not convert '{test_case}' to Test Case due to TypeError: {e}")
             except KeyError as e:
-                messagebox.showerror(title=self.app_name, message=f"Could not load test case with index {i} due to {e}!")
+                print(test_case)
+                messagebox.showerror(title=self.app_name, message=f"Could not load test case with index {i} due to KeyError: {e}!")
 
     def loadJson(self, file_path: str) -> list[dict]:
         with open(file_path, "r") as file:
@@ -344,42 +402,60 @@ class PyTestCasesApp(Tk):
             messagebox.showerror(title="PyTestCases Error: Could not load Xlsx", message=err_msg)
             raise ImportError(err_msg)
         wb = load_workbook(file_path)
-        ws = wb.active
+        try:
+            ws = wb[self.xlsx_test_cases_sheet_name]
+        except KeyError:
+            messagebox.showerror(title=self.app_name, message=f"Did not detect sheet with name '{self.xlsx_test_cases_sheet_name}'!")
+            return
 
-        column_names = [cell.value for cell in ws[3]]
+        column_names = [cell.value for cell in ws[self.column_names_row]]
 
         raw_data = []
         current_test_case = None
         current_test_steps = []
+        current_test_preconditions = ""
 
-        for row in ws.iter_rows(min_row=4, values_only=True):
+        for row in ws.iter_rows(min_row=self.test_case_data_starting_row, values_only=True):
             row_data = dict(zip(column_names, row))
 
             if current_test_case and row_data["Test Case Id"] != current_test_case["Test Case Id"]:
-                raw_data.append({
-                    "Test Case ID": current_test_case["Test Case Id"],
+                tc = {
+                    "Test Case Id": current_test_case["Test Case Id"],
                     "Test Case Name": current_test_case["Test Case Name"],
-                    "Area": current_test_case["Feature"],
+                    "Area": current_test_case["Area"],
                     "Level": current_test_case["Level"],
+                    "Preconditions": current_test_preconditions,
                     "Test Steps": current_test_steps,
-                    "Test Execution Id": None,
-                    "Test Status": None,
-                })
+                    "Test Execution Id": current_test_case.get("Test Execution Id"),
+                    "Test Status": current_test_case.get("Test Status"),
+                    "Assignee": current_test_case.get("Assignee"),
+                    "Gsheet Document Id": current_test_case.get("Gsheet Document Id")
+                }
+                raw_data.append(tc)
                 current_test_steps = []
+                current_test_preconditions = ""
 
             current_test_case = row_data
-            current_test_steps.append([row_data["Test Step Description"], row_data["Expected Results"]])
+            current_test_steps.append([row_data["Test Step Description"], row_data["Expected Result"]])
+            current_test_preconditions += (str(row_data["Preconditions"]) + "\n") if row_data.get("Preconditions") is not None else ""
+            print("===", current_test_case, "----")
+            print(current_test_case.get("Preconditions"))
+
 
         if current_test_case:
-            raw_data.append({
-                "Test Case ID": current_test_case["Test Case Id"],
-                "Test Case Name": current_test_case["Test Case Name"],
-                "Area": current_test_case["Feature"],
-                "Level": current_test_case["Level"],
-                "Test Steps": current_test_steps,
-                "Test Execution Id": None,
-                "Test Status": None,
-            })
+            tc = {
+                    "Test Case Id": current_test_case["Test Case Id"],
+                    "Test Case Name": current_test_case["Test Case Name"],
+                    "Area": current_test_case["Area"],
+                    "Level": current_test_case["Level"],
+                    "Preconditions": current_test_preconditions,
+                    "Test Steps": current_test_steps,
+                    "Test Execution Id": current_test_case.get("Test Execution Id"),
+                    "Test Status": current_test_case.get("Test Status"),
+                    "Assignee": current_test_case.get("Assignee"),
+                    "Gsheet Document Id": current_test_case.get("Gsheet Document Id")
+                }
+            raw_data.append(tc)
 
         while raw_data[-1] is None:
             self.test_cases.pop()

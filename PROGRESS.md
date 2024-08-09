@@ -16,13 +16,13 @@
 - [ ] Make Test Section scrollable
     - [ ] Scrollable if table.height > ``.config.max_test_section_height``
 - [ ] Import from file improvements 
-    - [ ] Change the import to import all ``Supported Fields``
+    - [x] Change the import to import all ``Supported Fields``
     - [ ] Make import case-sensitivity-proof (always use Title Case)
 - [ ] Import from gSheet
     - [ ] ??
-- [ ] Add Preconditions
-    - [ ] As a ``Text`` above Test Table, enrollable
-    - [ ] Make a label that will indicate that there is some precondition if it is collapsed
+- [x] Add Preconditions
+    - [x] As a ``Text`` above Test Table, enrollable
+    - [x] Make a label that will indicate that there is some precondition if it is collapsed
 - [ ] Add Notes
     - [ ] As a Custom blue "N" Element, in the top right corner of the ``Expected Result``
     - [ ] If opened, text from here can be copied
@@ -30,10 +30,11 @@
 - [ ] Add assignee field
     - [ ] show it if it is not ``null``
 - [ ] Make xlsx importing more flexible
-    - [ ] open workbook with name ``<TEST CASES SHEET NAME>``
+    - [x] open workbook with name ``<TEST CASES SHEET NAME>``
     - [ ] make it possible to change the starting row
 - [ ] Add Test Case Edidtion
-    - [ ] Gather input from ``Test Step``, ``Expected Result``, ``Actual Result``
+    - [x] Gather input from ``Test Step``, ``Expected Result``, ``Actual Result``
+    - [ ] Add possibility to edit ``source file``
 - [ ] Add Test Case filtering
     - [ ] Filtering by ``Area``
     - [ ] Filtering by ``Level``
@@ -42,7 +43,7 @@
     - [ ] Enable drag-and-drop via all background
 - [ ] Focus modes
     - [ ] Make top panel enrollable horizontally
-    - [ ] Make Expected Result enrollable vertically
+    - [x] Make Expected Result enrollable vertically
 - [ ] Recognition that there were changes in ``Test Step`` or ``Expected Result``
     - [ ] Add `` - [!e]`` to the ``Test Case Name``, but do not save it with it
     - [ ] Make a green ``!`` to top-left conrer of edited ``Test Step`` / ``Expected Result``
@@ -60,7 +61,7 @@
         - [ ] ``Gsheet Document Id`` value handling
         - [ ] ``Gsheet Document Id`` pop-up
         - [ ] Gsheet Document Name validation
-- [ ] Add Support for light mode ( currently pastel colors are to pastel and barely visible on light mode )
+- [x] Add Support for light mode ( currently pastel colors are to pastel and barely visible on light mode )
 - [x] Add support of openpyxl optional
 - [ ] Add Test Case Creation
 
