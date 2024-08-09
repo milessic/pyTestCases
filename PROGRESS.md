@@ -1,0 +1,67 @@
+# Tasks
+- [ ] Create .config file and it's handling
+    - [ ] config support
+    - [ ] Xlsx settings
+        - [ ] Xlsx Field Names row ``3``
+        - [ ] Xlsx import starting row ``4``
+        - [ ] Xlsx Test Cases worksheet name ``TEST CASES``
+    - [ ] Default UI
+        - [ ] App Theme ``BlackTheme``
+        - [ ] ``Actual Result`` Enrolled ``True``
+        - [ ] Always-on-top ``True``
+        - [ ] Table column width ``30``
+        - [ ] Max Test Section height ``??``
+    - [ ] Export settings
+        - [ ] Default prefix ``output_``
+- [ ] Make Test Section scrollable
+    - [ ] Scrollable if table.height > ``.config.max_test_section_height``
+- [ ] Import from file improvements 
+    - [x] Change the import to import all ``Supported Fields``
+    - [ ] Make import case-sensitivity-proof (always use Title Case)
+- [ ] Import from gSheet
+    - [ ] ??
+- [x] Add Preconditions
+    - [x] As a ``Text`` above Test Table, enrollable
+    - [x] Make a label that will indicate that there is some precondition if it is collapsed
+- [ ] Add Notes
+    - [ ] As a Custom blue "N" Element, in the top right corner of the ``Expected Result``
+    - [ ] If opened, text from here can be copied
+    - [ ] Can be closed by clicking on the "x" button, or anywhere else in the applicaiton
+- [ ] Add assignee field
+    - [ ] show it if it is not ``null``
+- [ ] Make xlsx importing more flexible
+    - [x] open workbook with name ``<TEST CASES SHEET NAME>``
+    - [ ] make it possible to change the starting row
+- [ ] Add Test Case Edidtion
+    - [x] Gather input from ``Test Step``, ``Expected Result``, ``Actual Result``
+    - [ ] Add possibility to edit ``source file``
+- [ ] Add Test Case filtering
+    - [ ] Filtering by ``Area``
+    - [ ] Filtering by ``Level``
+- [ ] Create custom Frame
+    - [ ] ``Minimize``, ``Close``, ``Title``
+    - [ ] Enable drag-and-drop via all background
+- [ ] Focus modes
+    - [ ] Make top panel enrollable horizontally
+    - [x] Make Expected Result enrollable vertically
+- [ ] Recognition that there were changes in ``Test Step`` or ``Expected Result``
+    - [ ] Add `` - [!e]`` to the ``Test Case Name``, but do not save it with it
+    - [ ] Make a green ``!`` to top-left conrer of edited ``Test Step`` / ``Expected Result``
+    - [ ] Make a green ``!`` next to Exports (``Xlsx``, ``Csv``, ``gSheet``)
+    - [ ] If exporting as (``Xlsx``, ``Csv``, ``gSheet``), ask if export with new data
+- [ ] Exports
+    - [ ] Create a template for ``text`` Exports
+    - [ ] MD support
+    - [ ] Jira Markdown support
+    - [ ] HTML support
+    - [ ] Xlsx support
+    - [ ] Csv support
+    - [ ] gSheet support
+        - [ ] gSheet connection
+        - [ ] ``Gsheet Document Id`` value handling
+        - [ ] ``Gsheet Document Id`` pop-up
+        - [ ] Gsheet Document Name validation
+- [x] Add Support for light mode ( currently pastel colors are to pastel and barely visible on light mode )
+- [x] Add support of openpyxl optional
+- [ ] Add Test Case Creation
+
