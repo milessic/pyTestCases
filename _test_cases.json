@@ -1,0 +1,59 @@
+[
+	{
+		"Test Case Id": 1,
+		"Test Case Name": "Verify Game loads",
+		"Area": "Core",
+		"Level": "Smoke",
+		"Test Steps": [
+			["Launch Game", "Splash Screen is displayed"],
+			["Wait for Main Menu", "Main Menu loads"]
+		],
+		"Test Execution Id": null,
+		"Assignee":"Milosz",
+		"Preconditions": "Do a barell roll!",
+		"Test Status": null
+	},
+	{
+		"Test Case Id": 2,
+		"Test Case Name": "Menu Elements",
+		"Area": "UI",
+        "Level": "Smoke",
+		"Test Steps": [
+			["Open Menu and verify elements", "- Gradient menu is visible\nButtons:\n- Start\n- Shop (inactive)\n- About\n- Settings", "", "Don't forget to test it properly!"],
+			["Verify buttons are functional and move to the proper places", "All buttons move the user to the proper place", "",""],
+			["Verify buttons SFX", "At click, SFX is audible","",""]
+		],
+		"Assignee":"Miłosz",
+		"Test Execution Id": null,
+		"Test Status": null
+	},
+	{
+		"Test Case Id": 3,
+		"Test Case Name": "Game Smoke test",
+		"Area": "Game",
+        "Level": "Smoke",
+		"Preconditions": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque eget semper ante. Suspendisse mattis nisi eget sagittis blandit. Donec interdum eros in blandit fringilla. Aliquam ornare, ex ac fringilla feugiat, nunc ipsum facilisis nunc, quis condimentum neque eros eu odio. Aenean a felis id enim tempor pellentesque eu nec sem. Maecenas volutpat est massa, quis rhoncus lectus euismod eu. Vestibulum pretium nulla a justo sodales aliquet.",
+		"Test Steps": [
+			["Start new game", "Elements visible:\n- Score counter<br>- Sushi stand\n- Background"],
+			["Verify that RunnerSlow is generated", "RunnerSlow can be generated"],
+			["Verify that RunnerFast is generated", "RunnerFast can be generated"],
+			["Verfiy that all Enemies can be killed", "All enemies can be defeated"],
+			["Verify that Game Over screen is displayed after Runners defeat the Stand", "- No audio from gameplay is audible\n- Game Over screen is displayed\n- Button leads to the Main Menu"]
+		],
+		"Test Execution Id": null,
+		"Test Status": null
+	},
+	{
+		"Test Case Id": 4,
+		"Test Case Name": "Game restart",
+		"Area": "Game",
+        "Level": "Smoke",
+		"Test Steps": [
+			["Start and loose the game", "Game Over is displayed"],
+			["Start new game", "Everything is as it was, new enemies are generated, sfx are correct"]
+		],
+		"Test Execution Id": null,
+		"Test Status": null
+	}
+
+]
