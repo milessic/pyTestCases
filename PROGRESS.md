@@ -29,11 +29,11 @@
     - [ ] As a Custom blue "N" Element, in the top right corner of the ``Expected Result``
     - [ ] If opened, text from here can be copied
     - [ ] Can be closed by clicking on the "x" button, or anywhere else in the applicaiton
-- [ ] Add assignee field
-    - [ ] show it if it is not ``null``
+- [x] Add assignee field
+    - [x] show it if it is not ``null``
 - [ ] Make xlsx importing more flexible
     - [x] open workbook with name ``<TEST CASES SHEET NAME>``
-    - [ ] make it possible to change the starting row
+    - [x] make it possible to change the starting row
 - [ ] Add Test Case Edidtion
     - [x] Gather input from ``Test Step``, ``Expected Result``, ``Actual Result``
     - [ ] Add possibility to edit ``source file``
