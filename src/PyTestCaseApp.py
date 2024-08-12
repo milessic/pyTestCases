@@ -29,9 +29,9 @@ class PyTestCasesApp(Tk):
         self.editing_disabled = False
         self.column_names_row=column_names_row
         self.test_case_data_starting_row = test_case_data_starting_row
-        self.actual_results_displayed = actual_results_displayed
+        self.actual_results_displayed = not actual_results_displayed
         self.preconditions_displayed = preconditions_displayed
-        self.entroll_actual_results = actual_results_displayed
+        self.entroll_actual_results = not actual_results_displayed
         self.resizable(0, 0) 
         self.pixel = PhotoImage()
         theme = str(theme)
@@ -474,4 +474,3 @@ class PyTestCasesApp(Tk):
 if __name__ == "__main__":
     app = PyTestCasesApp()
     app.mainloop()
-
