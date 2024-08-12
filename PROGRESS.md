@@ -1,18 +1,18 @@
 # Tasks
 - [ ] Create .config file and it's handling
-    - [ ] config support
-    - [ ] Xlsx settings
-        - [ ] Xlsx Field Names row ``3``
-        - [ ] Xlsx import starting row ``4``
-        - [ ] Xlsx Test Cases worksheet name ``TEST CASES``
-    - [ ] Default UI
-        - [ ] App Theme ``BlackTheme``
-        - [ ] ``Actual Result`` Enrolled ``True``
-        - [ ] Always-on-top ``True``
-        - [ ] Table column width ``30``
-        - [ ] Max Test Section height ``??``
-    - [ ] Export settings
-        - [ ] Default prefix ``output_``
+    - [x] config support
+    - [x] Xlsx settings
+        - [x] Xlsx Field Names row ``3``
+        - [x] Xlsx import starting row ``4``
+        - [x] Xlsx Test Cases worksheet name ``TEST CASES``
+    - [x] Default UI
+        - [x] App Theme ``BlackTheme``
+        - [x] ``Actual Result`` Enrolled ``True``
+        - [x] Always-on-top ``True``
+        - [x] Table column width ``30``
+        - [x] Max Test Section height ``??``
+    - [x] Export settings
+        - [x] Default prefix ``output_``
 - [ ] Make Test Section scrollable
     - [ ] Scrollable if table.height > ``.config.max_test_section_height``
 - [ ] Import from file improvements 
@@ -23,7 +23,9 @@
 - [x] Add Preconditions
     - [x] As a ``Text`` above Test Table, enrollable
     - [x] Make a label that will indicate that there is some precondition if it is collapsed
-- [ ] Add Notes
+- [x] Add Notes
+    - [x] Add a highlight if there are some notes
+- [ ] Enhance Notes
     - [ ] As a Custom blue "N" Element, in the top right corner of the ``Expected Result``
     - [ ] If opened, text from here can be copied
     - [ ] Can be closed by clicking on the "x" button, or anywhere else in the applicaiton
