@@ -82,7 +82,9 @@ class PyTestCasesApp(Tk):
         # Setup Preconditions button and display
         self.preconditions_text_frame = self.myFrame(self)
         self.preconditions_label = self.myLabel(self.preconditions_text_frame, text="      Preconditions", bold=True)
-        self.preconditions_text = Table(self.preconditions_text_frame, column_headers=[], column_width=50, stylesheet=self.s,) #fixed_grid=[2,0])
+        self.assignee_label = self.myLabel(self.preconditions_text_frame, text="Assignee", bold=True)
+        self.assignee_value = self.myLabel(self.preconditions_text_frame, text="", bold=False, fg="white")
+        self.preconditions_text = Table(self.preconditions_text_frame, column_headers=[], column_width=(self.column_width*2)+1, stylesheet=self.s, columnspan=3) #fixed_grid=[2,0])
         #self.preconditions_text = myText(self, stylesheet=self.s, width=50, height=3, wrap=WORD)
         #self.preconditions_text.config(state="disabled")
         self.preconditions_control_btn = self.myButton(self, "-", command=lambda: self.control_preconditions(), image=True)
@@ -108,7 +110,7 @@ class PyTestCasesApp(Tk):
 
         # setup Buttons and their functions
         self.button_frame = self.myFrame(self)
-        self.button_frame.grid(row=2, column=0, columnspan=3, padx=0, pady=5)
+        self.button_frame.grid(row=2, column=0, columnspan=3, padx=0, pady=5, sticky="W")
 
         self.pass_button = self.myButton(self.button_frame, text="PASS", bg=Colors.green, fg="black",
                                   command=lambda: self.updateTestStatus("PASS"))
@@ -132,16 +134,26 @@ class PyTestCasesApp(Tk):
         self.next_button = self.myButton(self.button_frame, text="Next", command=self.nextTestCase)
         self.next_button.pack(side="left", padx=5, pady=5)
 
-    def control_preconditions(self):
+        # Setup key bindings
+        self.bind("<Control-e>", self.control_actual_result)
+        self.bind("<Control-r>", self.control_preconditions)
+        self.bind("<q>", self.previousTestCase)
+        self.bind("<w>", self.nextTestCase)
+        self.bind(str(1), lambda event: self.updateTestStatus("PASS"))
+        self.bind(str(2), lambda event: self.updateTestStatus("FAIL"))
+        self.bind(str(3), lambda event: self.updateTestStatus("BLOCKED"))
+        self.bind(str(4), lambda event: self.updateTestStatus("NOT TESTED"))
+
+    def control_preconditions(self, event=None):
         if self.preconditions_displayed:
             self.preconditions_text.hide_whole()
             self.preconditions_displayed = False
         else:
-            self.preconditions_text.show_whole()
+            self.preconditions_text.show_whole(columnspan=3)
             self.preconditions_displayed = True
 
 
-    def control_actual_result(self):
+    def control_actual_result(self, event=None):
         if self.actual_results_displayed:
             self.hide_actual_result()
         else:
@@ -163,7 +175,7 @@ class PyTestCasesApp(Tk):
 
     def myLabel(self, master:Misc, text:str, bold:bool=False, **kwargs) -> Label:
         if bold:
-            return Label(
+            label = Label(
                 master=master,
                 text=text,
                 bg=self.s.bg,
@@ -172,13 +184,14 @@ class PyTestCasesApp(Tk):
                 **kwargs
                 )
         else:
-            return Label(
+            label = Label(
                 master=master,
                 text=text,
-                bg=self.s.bg,
                 fg=self.s.fg,
-                **kwargs,
+                bg=self.s.bg,
                 )
+        label.config(**kwargs)
+        return label
 
     def myCombobox(self, master:Misc, textvariable, width) -> ttk.Combobox:
         return ttk.Combobox(
@@ -273,6 +286,9 @@ class PyTestCasesApp(Tk):
         self.displayTestCase()
 
     def displayTestCase(self, event=None, handle_actual_results:bool=True):
+        # delete assignee
+        self.assignee_label.grid_remove()
+        self.assignee_value.grid_remove()
         self.current_test_index = self.test_case_dropdown.current()
         if self.current_test_index == -1:
             return
@@ -310,19 +326,23 @@ class PyTestCasesApp(Tk):
         #    print(0)
         if not self.actual_results_displayed:
             self.hide_actual_result(change_status=False)
+        if test_case.get("Assignee"):
+            self.assignee_label.grid(row=2, column=1, sticky="W")
+            self.assignee_value.config(text=test_case["Assignee"])
+            self.assignee_value.grid(row=2, column=2, sticky="W")
 
-    def updateTestStatus(self, status):
+    def updateTestStatus(self, status:str, event=None):
         self.test_cases[self.current_test_index].set_status(status)
         self.setTestStatus(status)
         self.saveResults()
 
-    def previousTestCase(self):
+    def previousTestCase(self, event=None):
         if self.current_test_index > 0:
             self.current_test_index -= 1
             self.test_case_dropdown.current(self.current_test_index)
             self.displayTestCase()
 
-    def nextTestCase(self):
+    def nextTestCase(self, event=None):
         if self.current_test_index < len(self.test_cases) - 1:
             self.current_test_index += 1
             self.test_case_dropdown.current(self.current_test_index)
@@ -439,8 +459,6 @@ class PyTestCasesApp(Tk):
             current_test_case = row_data
             current_test_steps.append([row_data["Test Step Description"], row_data["Expected Result"]])
             current_test_preconditions += (str(row_data["Preconditions"]) + "\n") if row_data.get("Preconditions") is not None else ""
-            print("===", current_test_case, "----")
-            print(current_test_case.get("Preconditions"))
 
 
         if current_test_case:

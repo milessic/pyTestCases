@@ -29,10 +29,11 @@ def myEntry(master:Misc, stylesheet, width, **kwargs) -> Entry:
             **kwargs
             )
 class Table:
-    def __init__(self, root: Misc, column_headers:list, column_width:int, stylesheet, fixed_grid:bool|list=False):
+    def __init__(self, root: Misc, column_headers:list, column_width:int, stylesheet, fixed_grid:bool|list=False, columnspan:int=1):
         r"""
         - column_width - in characters, e.g. "word" has 4 characters
         """
+        self.columnspan=columnspan
         self.tooltips = []
         self.fixed_grid = fixed_grid
         self.s = stylesheet
@@ -85,12 +86,12 @@ class Table:
                     print(e)
                     continue
 
-    def show_whole(self):
+    def show_whole(self, columnspan:int=1):
         row_pos, column_pos = 0,0
         for row in self.table:
             for cell in row:
                 try:
-                    cell.grid(row=row_pos, column=column_pos)
+                    cell.grid(row=row_pos, column=column_pos, columnspan=columnspan)
                 except Exception:
                     continue
                 finally:
@@ -169,9 +170,9 @@ class Table:
             if i != 3: # Notes
                 # TODO why?
                 if isinstance(self.fixed_grid, bool) and not self.fixed_grid:
-                    cell.grid(row=cell_x, column=cell_y, pady=(self.previous_row_h*xx))
+                    cell.grid(row=cell_x, column=cell_y, pady=(self.previous_row_h*xx), columnspan=self.columnspan)
                 else:
-                    cell.grid(row=self.fixed_grid[0], column=self.fixed_grid[1])
+                    cell.grid(row=self.fixed_grid[0], column=self.fixed_grid[1], columnspan=self.columnspan)
             if i == 3:
                 if column == "" or column is None:
                     continue

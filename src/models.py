@@ -54,7 +54,6 @@ class TestCaseModel:
     def dict_to_save(self) -> dict:
         # load as dict
         as_dict = self.dict()
-        print(json.dumps(as_dict, indent=4))
         # merge test_steps
         try:
             reconfigured_steps = [(s,e,a,n) for s,e,a,n in zip(
@@ -63,19 +62,12 @@ class TestCaseModel:
             self.test_steps[2],
             self.test_steps[3],
             )]
-            print(len(self.test_steps[0]))
-            print(len(self.test_steps[1]))
-            print(len(self.test_steps[2]))
-            print(len(self.test_steps[3]))
-            print("==RECONFIG"*20)
-            print(reconfigured_steps)
             del as_dict["Test Steps"]
             as_dict["Test Steps"] = reconfigured_steps
         except:
             print("ERRROERORERE!")
             print(self.test_steps)
             raise
-        print(as_dict["Test Steps"])
         # return
         return as_dict
 
