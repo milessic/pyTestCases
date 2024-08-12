@@ -1,6 +1,6 @@
 import re
 from tkinter import (
-    END, Tk, StringVar, Label, Entry, Button, Frame, filedialog, messagebox, ttk, Misc, Text
+    END, Tk, StringVar, Label, Entry, Button, Frame, filedialog, messagebox, ttk, Misc, Text, Toplevel
 )
 from tkinter.constants import WORD
 
@@ -33,6 +33,7 @@ class Table:
         r"""
         - column_width - in characters, e.g. "word" has 4 characters
         """
+        self.tooltips = []
         self.fixed_grid = fixed_grid
         self.s = stylesheet
         self.root = root
@@ -49,6 +50,10 @@ class Table:
         self.clear()
     
     def clear(self):
+        # destory tooltips
+        for t in self.tooltips:
+            del t
+        self.tooltips=[]
         self.previous_row_h = 0
         self.test_case_rows = 10
         for row in self.table:
@@ -131,6 +136,7 @@ class Table:
         self.test_step_i += 1
 
     def _create_row(self, row:list[str]):
+        expected_cell = None
         xx = 0 # just to keep previous_r_h calculation at end inactive
         misc_row = []
         # calculate row height
@@ -161,14 +167,89 @@ class Table:
             cell.insert(END, column)
             #cell.grid(row=self.x+self.test_case_rows, column=self.y, pady=(self.previous_row_h*xx))
             if i != 3: # Notes
+                # TODO why?
                 if isinstance(self.fixed_grid, bool) and not self.fixed_grid:
                     cell.grid(row=cell_x, column=cell_y, pady=(self.previous_row_h*xx))
                 else:
                     cell.grid(row=self.fixed_grid[0], column=self.fixed_grid[1])
+            if i == 3:
+                if column == "" or column is None:
+                    continue
+                print(expected_cell)
+                self.tooltips.append(
+                        CreateToolTip(
+                        expected_cell,
+                        text=column
+                        )
+                )
+                expected_cell.config(
+                        highlightcolor="blue",
+                        highlightbackground="blue",
+                        )
+
+                #tooltip.grid(row=cell_x, column=cell_y)
             self.y += 1
             misc_row.append(cell)
+            if i == 1:
+                expected_cell = cell
         self.test_case_rows += self.previous_row_h
         self.table.append(misc_row)
         self.y = 0
         self.previous_row_h = height * 20  + (max_characters//self.table_width)
             
+
+class CreateToolTip(object):
+    """
+    create a tooltip for a given widget
+    """
+    def __init__(self, widget, text='widget info'):
+        self.waittime = 50     #miliseconds
+        self.wraplength = 180   #pixels
+        self.widget = widget
+        self.text = text
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Leave>", self.leave)
+        self.widget.bind("<ButtonPress>", self.leave)
+        self.id = None
+        self.tw = None
+
+    def enter(self, event=None):
+        self.schedule()
+
+    def leave(self, event=None):
+        self.unschedule()
+        self.hidetip()
+
+    def schedule(self):
+        self.unschedule()
+        self.id = self.widget.after(self.waittime, self.showtip)
+
+    def unschedule(self):
+        id = self.id
+        self.id = None
+        if id:
+            self.widget.after_cancel(id)
+
+    def showtip(self, event=None):
+        x = y = 0
+        x, y, cx, cy = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 20
+        # creates a toplevel window
+        self.tw = Toplevel(self.widget)
+        # Leaves only the label and removes the app window
+        self.tw.wm_overrideredirect(True)
+        self.tw.wm_geometry("+%d+%d" % (x, y))
+        label = Label(
+                self.tw,
+                text=self.text,
+                justify='left',
+                    background="#ffffff", relief='solid', borderwidth=1,
+                       wraplength = self.wraplength)
+        label.pack(ipadx=1)
+
+    def hidetip(self):
+        tw = self.tw
+        self.tw= None
+        if tw:
+            tw.destroy()
