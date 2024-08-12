@@ -155,4 +155,4 @@ dmypy.json
 cython_debug/
 
 output*
-*lock.excel
+*lock.excel*
