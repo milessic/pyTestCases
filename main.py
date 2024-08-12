@@ -24,10 +24,22 @@ if __name__ == "__main__":
         theme = "black"
     try:
         actual_results_enrolled = config["APPEARANCE"]["ActualResultsEnrolled"]
+        if actual_results_enrolled == "False":
+            actual_results_enrolled = False
+        elif actual_results_enrolled == "True":
+            actual_results_enrolled = True
+        else:
+            raise KeyError
     except KeyError:
-        actual_results_enrolled = True
+        actual_results_enrolled = False
     try:
         always_on_top = config["APPEARANCE"]["AlwaysOnTop"]
+        if always_on_top == "False":
+            always_on_top = False
+        elif always_on_top == "True":
+            always_on_top = True
+        else:
+            raise KeyError
     except KeyError:
         always_on_top = True
     try:
