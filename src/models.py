@@ -75,7 +75,10 @@ class TestCaseModel:
         self.test_status = status
 
     def set_test_steps(self, test_steps:list):
-        self.test_steps = test_steps
+        r"Sets Description, Exptected and Actual"
+        self.test_steps[0] = test_steps[0]
+        self.test_steps[1] = test_steps[1]
+        self.test_steps[2] = test_steps[2]
 
     def insert_test_steps(self, test_steps:list[str]):
         for step in test_steps:
