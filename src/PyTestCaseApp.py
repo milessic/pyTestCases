@@ -1,4 +1,5 @@
 import json
+from os import walk
 import re
 from pathlib import Path
 from time import time
@@ -11,9 +12,13 @@ from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QIcon
 
 from src.models import TestCaseModel
+from src.Elements import MyComboBox
+from src.exports import Formatting
 
 
 class PyTestCasesApp(QMainWindow):
+    control_pressed = False
+    shift_pressed = False
     def __init__(self, theme: str = None, actual_results_displayed=True, always_on_top: bool=True, column_width: int=200, 
                  preconditions_displayed: bool=True, default_exports_prefix: str="output_", column_names_row: int=3, 
                  test_case_data_starting_row: int=4, xlsx_test_cases_sheet_name: str="TEST CASES"):
@@ -63,13 +68,17 @@ class PyTestCasesApp(QMainWindow):
         # Top Panel
         self.execution_id_label = QLabel("Test Execution ID:", self)
         self.execution_id_input = QLineEdit(self)
-        self.execution_id_button = QPushButton("Load Tests", self)
-        self.execution_id_button.clicked.connect(self.loadTests)
+        self.load_tests_button = QPushButton("Load Tests", self)
+        self.load_tests_button.clicked.connect(self.loadTests)
+        self.export_combo = QComboBox(self)
+        self.export_combo.addItems(["Export","Jira"])
+        self.export_combo.currentIndexChanged.connect(self.handleExport)
 
         top_layout = QHBoxLayout()
         top_layout.addWidget(self.execution_id_label)
         top_layout.addWidget(self.execution_id_input)
-        top_layout.addWidget(self.execution_id_button)
+        top_layout.addWidget(self.load_tests_button)
+        top_layout.addWidget(self.export_combo)
         self.layout.addLayout(top_layout)
 
         # Dropdown for test cases
@@ -113,7 +122,9 @@ class PyTestCasesApp(QMainWindow):
 
         # Preconditions display
         self.preconditions_text_frame = QFrame(self)
-        self.preconditions_text_layout = QVBoxLayout(self.preconditions_text_frame)
+        self.preconditions_layout = QVBoxLayout(self.preconditions_text_frame)
+        self.preconditions_text_layout = QHBoxLayout()
+        self.preconditions_layout.addLayout(self.preconditions_text_layout)
         self.preconditions_label = QLabel("Preconditions", self.preconditions_text_frame)
         self.assignee_label = QLabel("Assignee", self.preconditions_text_frame)
         self.assignee_value = QLabel("", self.preconditions_text_frame)
@@ -121,7 +132,7 @@ class PyTestCasesApp(QMainWindow):
         #self.preconditions_text.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.preconditions_text_layout.addWidget(self.preconditions_label)
-        self.preconditions_text_layout.addWidget(self.preconditions_text)
+        self.preconditions_layout.addWidget(self.preconditions_text)
         self.preconditions_text_layout.addWidget(self.assignee_label)
         self.preconditions_text_layout.addWidget(self.assignee_value)
         self.layout.addWidget(self.preconditions_text_frame)
@@ -132,6 +143,9 @@ class PyTestCasesApp(QMainWindow):
         self.test_case_table = QTableWidget(0, 3, self.table_test_case_frame)
         self.test_case_table.setHorizontalHeaderLabels(["Description", "Expected Result", "Actual Result"])
         self.test_case_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.test_case_table.horizontalHeader().setStretchLastSection(True)
+        self.test_case_table.setWordWrap(True)
+        self.test_case_table.setMinimumHeight(150) 
         # test case control button
         self.test_case_table_control_actual_resultss_btn = QPushButton("x", self.table_test_case_frame)
         self.test_case_table_control_actual_resultss_btn.clicked.connect(lambda: self.control_actual_results())
@@ -139,6 +153,38 @@ class PyTestCasesApp(QMainWindow):
 
         self.test_table_layout.addWidget(self.test_case_table)
         self.layout.addWidget(self.table_test_case_frame)
+
+
+    # events
+    def keyReleaseEvent(self, e):
+        if e.key() == Qt.Key_Control:
+            self.control_pressed = False
+        if e.key() == Qt.Key_Shift:
+            self.shift_pressed = False
+
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key_Shift:
+            self.shift_pressed = True
+        if e.key() == Qt.Key_Control:
+            self.control_pressed = True
+        if self.control_pressed:
+            if e.key() == Qt.Key_Q:
+                self.control_preconditions()
+            if e.key() == Qt.Key_W:
+                self.control_actual_results()
+            if e.key() == Qt.Key_1:
+                self.updateTestStatus("PASS")
+            if e.key() == Qt.Key_2:
+                self.updateTestStatus("FAIL")
+            if e.key() == Qt.Key_3:
+                self.updateTestStatus("BLOCKED")
+            if e.key() == Qt.Key_4:
+                self.updateTestStatus("NOT TESTED")
+            return
+        if e.key() == Qt.Key_Q:
+            self.previousTestCase()
+        if e.key() == Qt.Key_W:
+            self.nextTestCase()
 
 
     def mousePressEvent(self, event):
@@ -156,6 +202,66 @@ class PyTestCasesApp(QMainWindow):
         if event.button() == Qt.LeftButton:
             self.dragging = False
             event.accept()
+
+    def handleExport(self):
+        selected_option = self.export_combo.currentText()
+        print(selected_option)
+        match selected_option.lower():
+            case "jira":
+                report = self._prepare_jira_export()
+            case "export":
+                return
+            case _:
+                QMessageBox.critical(self, self.app_name, f"'{selected_option}' not supported as an export!")
+        #raise NotImplemented
+        self.export_combo.setCurrentIndex(0)
+        report_box = QMessageBox()
+        report_box.setGeometry(100,100,500,300)
+        report_box.setWindowTitle(f"{selected_option} report")
+        report_box.setText("Export is ready!")
+        report_box.setDetailedText(report)
+        report_box.exec()
+
+    def _prepare_jira_export(self) -> str:
+        f = Formatting("jira")
+        passed = []
+        failed = []
+        blocked = []
+        not_tested = []
+        for tc in self.test_cases:
+            match str(tc.test_status).upper():
+                case "PASS":
+                    passed.append(tc)
+                case "FAIL":
+                    failed.append(tc)
+                case "BLOCKED":
+                    blocked.append(tc)
+                case "NOT TESTED":
+                    not_tested.append(tc)
+                case _:
+                    not_tested.append(tc)
+        report = f"""
+| PASSED | {len(passed)} |
+| FAILED | {len(failed)} |
+| BLOCKED | {len(blocked)} |
+| NOT TESTED | {len(not_tested)} |
+
+"""
+        report += f"{f.f['h2']}Failed tests\n"
+        for tc in failed:
+            report += f"{f.f['bullet']} {tc}\n"
+        report += f"{f.f['h2']}Blocked tests\n"
+        for tc in blocked:
+            report += f"{f.f['bullet']} {tc}\n"
+        report += f"{f.f['h2']}Passed tests\n"
+        for tc in passed:
+            report += f"{f.f['bullet']} {tc}\n"
+        report += f"{f.f['h2']}Not tested tests\n"
+        for tc in not_tested:
+            report += f"{f.f['bullet']} {tc}\n"
+        return report
+
+        
     def displayTestCase(self):
         self.current_test_index = self.test_case_dropdown.currentIndex()
         if self.current_test_index == -1:
@@ -176,14 +282,17 @@ class PyTestCasesApp(QMainWindow):
             self.test_case_table.setItem(row_position, 0, QTableWidgetItem(step))
             self.test_case_table.setItem(row_position, 1, QTableWidgetItem(expected))
             self.test_case_table.setItem(row_position, 2, QTableWidgetItem(actual))
+            self.test_case_table.resizeRowsToContents()
 
         preconditions = test_case.get("Preconditions", "")
         self.preconditions_text.clear()
         if preconditions:
-            self.preconditions_text_frame.show()
+            self.preconditions_label.show()
+            self.preconditions_text.show()
             self.preconditions_text.setText(preconditions)
         else:
-            self.preconditions_text_frame.hide()
+            self.preconditions_label.hide()
+            self.preconditions_text.hide()
 
 
 
@@ -242,17 +351,23 @@ class PyTestCasesApp(QMainWindow):
         self.displayTestCase()
 
     def updateTestStatus(self, status: str):
+        if not len(self.test_cases):
+            return
         self.test_cases[self.current_test_index].set_status(status)
         self.setTestStatus(status)
         self.saveResults()
 
     def nextTestCase(self):
+        if not len(self.test_cases):
+            return
         if self.current_test_index < len(self.test_cases) - 1:
             self.current_test_index += 1
             self.test_case_dropdown.setCurrentIndex(self.current_test_index)
             self.displayTestCase()
 
     def previousTestCase(self):
+        if not len(self.test_cases):
+            return
         if self.current_test_index > 0:
             self.current_test_index -= 1
             self.test_case_dropdown.setCurrentIndex(self.current_test_index)
@@ -381,8 +496,17 @@ class PyTestCasesApp(QMainWindow):
         self.test_cases += raw_data
 
 
+    def control_preconditions(self):
+        if self.preconditions_displayed:
+            self.preconditions_text_frame.hide()
+            self.preconditions_displayed = False
+        else:
+            self.preconditions_text_frame.show()
+            self.preconditions_displayed = True
+
+
     def control_actual_results(self):
-        print(self.geometry())
+        #print(self.geometry())
         # TODO resize window
         if not self.actual_results_displayed:
             self.hide_actual_results()
