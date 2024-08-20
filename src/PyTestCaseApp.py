@@ -225,6 +225,7 @@ class PyTestCasesApp(QMainWindow):
         report_box.setWindowTitle(f"{selected_option} report")
         report_box.setText("Export is ready!")
         report_box.setDetailedText(report)
+        report_box.setWindowFlag(Qt.WindowStaysOnTopHint)
         report_box.exec()
 
     def _prepare_jira_export(self) -> str:
