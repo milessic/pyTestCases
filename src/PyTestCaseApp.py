@@ -253,16 +253,16 @@ class PyTestCasesApp(QMainWindow):
 | NOT TESTED | {len(not_tested)} |
 
 """
-        report += f"{f.f['h2']}Failed tests\n"
+        report += f"\n{f.f['h2']}Failed tests\n"
         for tc in failed:
             report += f"{f.f['bullet']} {tc}\n"
-        report += f"{f.f['h2']}Blocked tests\n"
+        report += f"\n{f.f['h2']}Blocked tests\n"
         for tc in blocked:
             report += f"{f.f['bullet']} {tc}\n"
-        report += f"{f.f['h2']}Passed tests\n"
+        report += f"\n{f.f['h2']}Passed tests\n"
         for tc in passed:
             report += f"{f.f['bullet']} {tc}\n"
-        report += f"{f.f['h2']}Not tested tests\n"
+        report += f"\n{f.f['h2']}Not tested tests\n"
         for tc in not_tested:
             report += f"{f.f['bullet']} {tc}\n"
         return report
