@@ -435,13 +435,13 @@ class PyTestCasesApp(QMainWindow):
             from openpyxl import load_workbook
         except ImportError:
             err_msg = "Could not load openpyxl!\nInstall openpyxl or import json file!"
-            messagebox.showerror(title="PyTestCases Error: Could not load Xlsx", message=err_msg)
+            QMessageBox.critical(self, title="PyTestCases Error: Could not load Xlsx", text=err_msg)
             raise ImportError(err_msg)
         wb = load_workbook(file_path)
         try:
             ws = wb[self.xlsx_test_cases_sheet_name]
         except KeyError:
-            messagebox.showerror(title=self.app_name, message=f"Did not detect sheet with name '{self.xlsx_test_cases_sheet_name}'!")
+            QMessageBox.critical(self, title=self.app_name, text=f"Did not detect sheet with name '{self.xlsx_test_cases_sheet_name}'!")
             return
 
         column_names = [cell.value for cell in ws[self.column_names_row]]
