@@ -437,7 +437,7 @@ class PyTestCasesApp(QMainWindow):
             err_msg = "Could not load openpyxl!\nInstall openpyxl or import json file!"
             QMessageBox.critical(self, title="PyTestCases Error: Could not load Xlsx", text=err_msg)
             raise ImportError(err_msg)
-        wb = load_workbook(file_path)
+        wb = load_workbook(file_path, data_only=True)
         try:
             ws = wb[self.xlsx_test_cases_sheet_name]
         except KeyError:

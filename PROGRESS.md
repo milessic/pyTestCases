@@ -34,6 +34,7 @@
 - [ ] Make xlsx importing more flexible
     - [x] open workbook with name ``<TEST CASES SHEET NAME>``
     - [x] make it possible to change the starting row
+    - [ ] import xlsx values not formulas
 - [ ] Add Test Case Edidtion
     - [x] Gather input from ``Test Step``, ``Expected Result``, ``Actual Result``
     - [ ] Add possibility to edit ``source file``
@@ -57,6 +58,7 @@
     - [ ] Jira Markdown support
     - [ ] HTML support
     - [ ] Xlsx support
+        - [ ] import xlsx values and formulas, (for xlsx importsave)
     - [ ] Csv support
     - [ ] gSheet support
         - [ ] gSheet connection
