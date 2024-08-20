@@ -1,8 +1,20 @@
 import sys
+from PyQt5.QtWidgets import (
+    QApplication)
 import configparser
 
 from src.PyTestCaseApp import PyTestCasesApp
 
+
+if __name__ == "__main__":
+    import sys
+
+    app = QApplication(sys.argv)
+    window = PyTestCasesApp()
+    window.show()
+    sys.exit(app.exec_())
+
+exit()
 if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read(".config.ini")
@@ -79,7 +91,7 @@ if __name__ == "__main__":
 
 
 
-    app = PyTestCasesApp(
+    window = PyTestCasesApp(
             theme=theme,
             actual_results_displayed=actual_results_enrolled,
             always_on_top=always_on_top,
@@ -90,5 +102,7 @@ if __name__ == "__main__":
             test_case_data_starting_row=test_cases_data_starting_row,
             xlsx_test_cases_sheet_name=test_case_data_worksheet_name
             )
-    app.update()
-    app.mainloop()
+    app = QApplication(sys.argv)
+    #window = PyTestCasesApp()
+    window.show()
+    sys.exit(app.exec_())

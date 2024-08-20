@@ -1,256 +1,338 @@
 import json
+from os import walk
+import re
 from pathlib import Path
 from time import time
-from tkinter import (
-    END, Tk, StringVar, Label, Entry, Button, Frame, filedialog, messagebox, ttk, Misc, Text, PhotoImage
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout,
+    QHBoxLayout, QFrame, QFileDialog, QMessageBox, QComboBox, QTableWidget,
+    QTableWidgetItem, QHeaderView, QWidget, QTextEdit
 )
-from tkinter.constants import FIRST, LAST, WORD
+from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtGui import QIcon
+
 from src.models import TestCaseModel
-from src.styles import Styles, Colors
-from src.Elements import myText, myEntry, Table
+from src.Elements import MyComboBox
+from src.exports import Formatting
 
 
-class PyTestCasesApp(Tk):
-    def __init__(self,
-                 theme:str | None = None,
-                 actual_results_displayed=True,
-                 always_on_top:bool=True,
-                 column_width:int=30,
-                 preconditions_displayed:bool=True,
-                 default_exports_prefix:str="output_",
-                 column_names_row:int=3,
-                 test_case_data_starting_row:int=4,
-                 xlsx_test_cases_sheet_name:str="TEST CASES"
-                 ):
+class PyTestCasesApp(QMainWindow):
+    control_pressed = False
+    shift_pressed = False
+    def __init__(self, theme: str = None, actual_results_displayed=True, always_on_top: bool=True, column_width: int=200, 
+                 preconditions_displayed: bool=True, default_exports_prefix: str="output_", column_names_row: int=3, 
+                 test_case_data_starting_row: int=4, xlsx_test_cases_sheet_name: str="TEST CASES"):
         super().__init__()
+        self.show_save_info = True
+        self.test_cases = []
+        self.dragging = False
+        self.drag_position = QPoint()
+
+
         self.app_name = "PyTestCases"
         self.xlsx_test_cases_sheet_name = xlsx_test_cases_sheet_name
         self.default_exports_prefix = default_exports_prefix
         self.editing_disabled = False
-        self.column_names_row=column_names_row
+        self.column_names_row = column_names_row
         self.test_case_data_starting_row = test_case_data_starting_row
         self.actual_results_displayed = not actual_results_displayed
         self.preconditions_displayed = preconditions_displayed
-        self.entroll_actual_results = not actual_results_displayed
-        self.resizable(0, 0) 
-        self.pixel = PhotoImage()
-        theme = str(theme)
-        self.s = Styles(theme_name=theme)
-        self.config(bg=self.s.bg)
-        self.show_save_info = True
-        self.test_cases = []
         self.column_width = int(column_width)
         self.current_test_index = 0
         self.test_execution_id = None
-        #self.geometry("520x300")
+
         self.initUI()
-        self.style = ttk.Style(self)
-        self.control_actual_result()
+        self.setWindowFlags(Qt.FramelessWindowHint)
         if always_on_top:
-            self.attributes("-topmost", True)
+            self.setWindowFlag(Qt.WindowStaysOnTopHint)
+        self.show()
+        self.control_actual_results()
 
     def initUI(self):
-        # setup Window Title
-        self.title(self.app_name)
+        # Window title
+        self.setWindowTitle(self.app_name)
+        self.setGeometry(100, 100, 600, 400)
 
-        # setup Top Panel
-        self.execution_id_label = self.myLabel(self, text="Test Execution ID:")
-        self.execution_id_label.grid(row=0, column=0, padx=5, pady=5, sticky="W")
+        # Main widget and layout
+        self.main_widget = QWidget(self)
+        self.setCentralWidget(self.main_widget)
+        self.layout = QVBoxLayout(self.main_widget)
 
-        self.execution_id_input = myEntry(self, self.s, 30)
-        self.execution_id_input.grid(row=0, column=1, columnspan=1,padx=10, pady=5)
+        # TopNav
+        top_nav = QHBoxLayout()
+        top_nav.setAlignment(Qt.AlignRight)
+        self.minimize_button = QPushButton("-", self)
+        self.minimize_button.setFixedWidth(30)
+        self.minimize_button.clicked.connect(self.showMinimized)
+        self.close_button = QPushButton("x", self)
+        self.close_button.setFixedWidth(30)
+        self.close_button.clicked.connect(self.close)
+        top_nav.addWidget(self.minimize_button)
+        top_nav.addWidget(self.close_button, alignment=Qt.AlignRight)
+        self.layout.addLayout(top_nav)
+        # Top Panel
+        self.execution_id_label = QLabel("Test Execution ID:", self)
+        self.execution_id_input = QLineEdit(self)
+        self.load_tests_button = QPushButton("Load Tests", self)
+        self.load_tests_button.clicked.connect(self.loadTests)
+        self.export_combo = QComboBox(self)
+        self.export_combo.addItems(["Export","Jira"])
+        self.export_combo.currentIndexChanged.connect(self.handleExport)
 
-        self.execution_id_button = self.myButton(self, text="Load Tests", command=self.loadTests)
-        self.execution_id_button.grid(row=0, column=2, padx=0, pady=5, sticky="W")
+        top_layout = QHBoxLayout()
+        top_layout.addWidget(self.execution_id_label)
+        top_layout.addWidget(self.execution_id_input)
+        top_layout.addWidget(self.load_tests_button)
+        top_layout.addWidget(self.export_combo)
+        self.layout.addLayout(top_layout)
 
-        # setup Dropdown
-        self.test_case_var = StringVar()
-        self.test_case_dropdown = ttk.Combobox(self, textvariable=self.test_case_var, width=40)
-        self.test_case_dropdown.grid(row=1, column=0, columnspan=2, padx=5,pady=5, sticky="W")
-        self.test_case_dropdown.bind("<<ComboboxSelected>>", self.displayTestCase)
+        # Dropdown for test cases
+        self.test_case_dropdown = QComboBox(self)
+        self.test_case_dropdown.currentIndexChanged.connect(self.displayTestCase)
+        self.test_case_dropdown.setMinimumWidth(240)
 
-        # setup Test Case Title
-        #self.test_case_title = self.myLabel(self, text="Select a test case")
-        #self.test_case_title.grid(row=2, column=0, columnspan=3, padx=5, pady=5)
+        # Test status display
+        self.test_status_info_label = QLabel("Test Status:", self)
+        self.test_status_label = QLabel("", self)
+        dropdown_layout = QHBoxLayout()
+        dropdown_layout.addWidget(self.test_case_dropdown)
+        dropdown_layout.addWidget(self.test_status_info_label)
+        dropdown_layout.addWidget(self.test_status_label)
+        self.layout.addLayout(dropdown_layout)
 
-        # setup Test Case Status
-        self.test_status_info_label = self.myLabel(self, text="Test Status:")
-        self.test_status_info_label.grid(row=1, column=1,  padx=0, pady=5, sticky="E")
-        self.test_status_label = self.myLabel(self, text="")
-        self.test_status_label.grid(row=1, column=2,  padx=5, pady=5, sticky="we")
+        # Buttons for test status updates
+        self.button_frame = QFrame(self)
+        self.button_layout = QHBoxLayout(self.button_frame)
 
-        # Setup Preconditions button and display
-        self.preconditions_text_frame = self.myFrame(self)
-        self.preconditions_label = self.myLabel(self.preconditions_text_frame, text="      Preconditions", bold=True)
-        self.assignee_label = self.myLabel(self.preconditions_text_frame, text="Assignee", bold=True)
-        self.assignee_value = self.myLabel(self.preconditions_text_frame, text="", bold=False, fg="white")
-        self.preconditions_text = Table(self.preconditions_text_frame, column_headers=[], column_width=(self.column_width*2)+1, stylesheet=self.s, columnspan=3) #fixed_grid=[2,0])
-        #self.preconditions_text = myText(self, stylesheet=self.s, width=50, height=3, wrap=WORD)
-        #self.preconditions_text.config(state="disabled")
-        self.preconditions_control_btn = self.myButton(self, "-", command=lambda: self.control_preconditions(), image=True)
+        self.pass_button = QPushButton("PASS", self.button_frame)
+        self.fail_button = QPushButton("FAIL", self.button_frame)
+        self.blocked_button = QPushButton("BLOCKED", self.button_frame)
+        self.not_tested_button = QPushButton("NOT TESTED", self.button_frame)
+        self.prev_button = QPushButton("Previous", self.button_frame)
+        self.next_button = QPushButton("Next", self.button_frame)
 
-        self.preconditions_label.grid(row=2, column=0, sticky="W")
-        self.preconditions_text_frame.grid(row=3, column=0, columnspan=3, sticky="W")
-        self.preconditions_control_btn.place(x=5, y=132)
+        self.pass_button.clicked.connect(lambda: self.updateTestStatus("PASS"))
+        self.fail_button.clicked.connect(lambda: self.updateTestStatus("FAIL"))
+        self.blocked_button.clicked.connect(lambda: self.updateTestStatus("BLOCKED"))
+        self.not_tested_button.clicked.connect(lambda: self.updateTestStatus("NOT TESTED"))
+        self.prev_button.clicked.connect(self.previousTestCase)
+        self.next_button.clicked.connect(self.nextTestCase)
 
-        # setup Test Case Table
-        #self.test_case_table = ttk.Treeview(self, columns=("Description", "Expected Result"), show='headings')
-        self.table_test_case_frame = self.myFrame(self)
-        self.test_table_column_step = self.myLabel(self.table_test_case_frame, text="Test Step", bold=True)
-        self.test_table_column_expected = self.myLabel(self.table_test_case_frame, text="Expected Results", bold=True)
-        self.test_table_column_actual = self.myLabel(self.table_test_case_frame, text="Actual Results", bold=True)
-        self.test_case_table = Table(self.table_test_case_frame, column_headers=["Description", "Expected Result", "Actual Result"], column_width=self.column_width, stylesheet=self.s)
-        self.test_table_control_actual_btn = self.myButton(self.table_test_case_frame, "-", lambda: self.control_actual_result(), image=True)
+        self.button_layout.addWidget(self.pass_button)
+        self.button_layout.addWidget(self.fail_button)
+        self.button_layout.addWidget(self.blocked_button)
+        self.button_layout.addWidget(self.not_tested_button)
+        self.button_layout.addWidget(self.prev_button)
+        self.button_layout.addWidget(self.next_button)
+        self.layout.addWidget(self.button_frame)
 
-        self.test_table_column_step.grid(row=0,column=0)
-        self.test_table_column_expected.grid(row=0,column=1)
-        self.test_table_column_actual.grid(row=0,column=2)
-        self.test_table_control_actual_btn.place(x=self.column_width*15,y=1)
-        self.table_test_case_frame.grid(row=5, column=0, columnspan=3, padx=5, pady=5)
+        # Preconditions display
+        self.preconditions_text_frame = QFrame(self)
+        self.preconditions_layout = QVBoxLayout(self.preconditions_text_frame)
+        self.preconditions_text_layout = QHBoxLayout()
+        self.preconditions_layout.addLayout(self.preconditions_text_layout)
+        self.preconditions_label = QLabel("Preconditions", self.preconditions_text_frame)
+        self.assignee_label = QLabel("Assignee", self.preconditions_text_frame)
+        self.assignee_value = QLabel("", self.preconditions_text_frame)
+        self.preconditions_text = QTextEdit("", self.preconditions_text_frame)
+        #self.preconditions_text.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-        # setup Buttons and their functions
-        self.button_frame = self.myFrame(self)
-        self.button_frame.grid(row=2, column=0, columnspan=3, padx=0, pady=5, sticky="W")
+        self.preconditions_text_layout.addWidget(self.preconditions_label)
+        self.preconditions_layout.addWidget(self.preconditions_text)
+        self.preconditions_text_layout.addWidget(self.assignee_label)
+        self.preconditions_text_layout.addWidget(self.assignee_value)
+        self.layout.addWidget(self.preconditions_text_frame)
 
-        self.pass_button = self.myButton(self.button_frame, text="PASS", bg=Colors.green, fg="black",
-                                  command=lambda: self.updateTestStatus("PASS"))
-        self.pass_button.pack(side="left", padx=5, pady=5)
+        # Test Case Table
+        self.table_test_case_frame = QFrame(self)
+        self.test_table_layout = QVBoxLayout(self.table_test_case_frame)
+        self.test_case_table = QTableWidget(0, 3, self.table_test_case_frame)
+        self.test_case_table.setHorizontalHeaderLabels(["Description", "Expected Result", "Actual Result"])
+        self.test_case_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.test_case_table.horizontalHeader().setStretchLastSection(True)
+        self.test_case_table.setWordWrap(True)
+        self.test_case_table.setMinimumHeight(150) 
+        # test case control button
+        self.test_case_table_control_actual_resultss_btn = QPushButton("x", self.table_test_case_frame)
+        self.test_case_table_control_actual_resultss_btn.clicked.connect(lambda: self.control_actual_results())
+        self.test_case_table_control_actual_resultss_btn.setFixedSize(20, 20)
 
-        self.fail_button = self.myButton(self.button_frame, text="FAIL", bg=Colors.red, fg="black",
-                                  command=lambda: self.updateTestStatus("FAIL"))
-        self.fail_button.pack(side="left", padx=5, pady=5)
+        self.test_table_layout.addWidget(self.test_case_table)
+        self.layout.addWidget(self.table_test_case_frame)
 
-        self.blocked_button = self.myButton(self.button_frame, text="BLOCKED", bg=Colors.yellow, fg="black",
-                                     command=lambda: self.updateTestStatus("BLOCKED"))
-        self.blocked_button.pack(side="left", padx=5, pady=5)
 
-        self.not_tested_button = self.myButton(self.button_frame, text="NOT TESTED", bg=Colors.gray, fg="black",
-                                        command=lambda: self.updateTestStatus("NOT TESTED"))
-        self.not_tested_button.pack(side="left", padx=5, pady=5)
+    # events
+    def keyReleaseEvent(self, e):
+        if e.key() == Qt.Key_Control:
+            self.control_pressed = False
+        if e.key() == Qt.Key_Shift:
+            self.shift_pressed = False
 
-        self.prev_button = self.myButton(self.button_frame, text="Previous", command=self.previousTestCase)
-        self.prev_button.pack(side="left", padx=5, pady=5)
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key_Shift:
+            self.shift_pressed = True
+        if e.key() == Qt.Key_Control:
+            self.control_pressed = True
+        if self.control_pressed:
+            if e.key() == Qt.Key_Q:
+                self.control_preconditions()
+            if e.key() == Qt.Key_W:
+                self.control_actual_results()
+            if e.key() == Qt.Key_1:
+                self.updateTestStatus("PASS")
+            if e.key() == Qt.Key_2:
+                self.updateTestStatus("FAIL")
+            if e.key() == Qt.Key_3:
+                self.updateTestStatus("BLOCKED")
+            if e.key() == Qt.Key_4:
+                self.updateTestStatus("NOT TESTED")
+            return
+        if e.key() == Qt.Key_Q:
+            self.previousTestCase()
+        if e.key() == Qt.Key_W:
+            self.nextTestCase()
 
-        self.next_button = self.myButton(self.button_frame, text="Next", command=self.nextTestCase)
-        self.next_button.pack(side="left", padx=5, pady=5)
 
-        # Setup key bindings
-        self.bind("<Control-e>", self.control_actual_result)
-        self.bind("<Control-r>", self.control_preconditions)
-        self.bind("<q>", self.previousTestCase)
-        self.bind("<w>", self.nextTestCase)
-        self.bind(str(1), lambda event: self.updateTestStatus("PASS"))
-        self.bind(str(2), lambda event: self.updateTestStatus("FAIL"))
-        self.bind(str(3), lambda event: self.updateTestStatus("BLOCKED"))
-        self.bind(str(4), lambda event: self.updateTestStatus("NOT TESTED"))
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.dragging = True
+            self.drag_position = event.globalPos() - self.frameGeometry().topLeft()
+            event.accept()
 
-    def control_preconditions(self, event=None):
-        if self.preconditions_displayed:
-            self.preconditions_text.hide_whole()
-            self.preconditions_displayed = False
+    def mouseMoveEvent(self, event):
+        if self.dragging:
+            self.move(event.globalPos() - self.drag_position)
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.dragging = False
+            event.accept()
+
+    def handleExport(self):
+        selected_option = self.export_combo.currentText()
+        match selected_option.lower():
+            case "jira":
+                report = self._prepare_jira_export()
+            case "export":
+                return
+            case _:
+                QMessageBox.critical(self, self.app_name, f"'{selected_option}' not supported as an export!")
+        #raise NotImplemented
+        self.export_combo.setCurrentIndex(0)
+        report_box = QMessageBox()
+        report_box.setGeometry(100,100,500,300)
+        report_box.setWindowTitle(f"{selected_option} report")
+        report_box.setText("Export is ready!")
+        report_box.setDetailedText(report)
+        report_box.setWindowFlag(Qt.WindowStaysOnTopHint)
+        report_box.setMinimumWidth(500)
+        report_box.setStyleSheet("""QLabel{
+        min-width: 300px;
+        min-height: 30px;
+        },
+        QTextEdit{
+        min-height: 450px;
+        }
+        """)
+        report_box.exec()
+
+    def _prepare_jira_export(self) -> str:
+        f = Formatting("jira")
+        passed = []
+        failed = []
+        blocked = []
+        not_tested = []
+        for tc in self.test_cases:
+            match str(tc.test_status).upper():
+                case "PASS":
+                    passed.append(tc)
+                case "FAIL":
+                    failed.append(tc)
+                case "BLOCKED":
+                    blocked.append(tc)
+                case "NOT TESTED":
+                    not_tested.append(tc)
+                case _:
+                    not_tested.append(tc)
+        report = f"""
+| PASSED | {len(passed)} |
+| FAILED | {len(failed)} |
+| BLOCKED | {len(blocked)} |
+| NOT TESTED | {len(not_tested)} |
+
+"""
+        report += f"\n{f.f['h2']}Failed tests\n"
+        for tc in failed:
+            report += f"{f.f['bullet']} {tc}\n"
+        report += f"\n{f.f['h2']}Blocked tests\n"
+        for tc in blocked:
+            report += f"{f.f['bullet']} {tc}\n"
+        report += f"\n{f.f['h2']}Passed tests\n"
+        for tc in passed:
+            report += f"{f.f['bullet']} {tc}\n"
+        report += f"\n{f.f['h2']}Not tested tests\n"
+        for tc in not_tested:
+            report += f"{f.f['bullet']} {tc}\n"
+        return report
+
+        
+    def displayTestCase(self):
+        self.current_test_index = self.test_case_dropdown.currentIndex()
+        if self.current_test_index == -1:
+            return
+
+        test_case = self.test_cases[self.current_test_index].dict()
+        self.setTestStatus(test_case["Test Status"])
+
+        self.test_case_table.setRowCount(0)
+        for step, expected, actual, note in zip(
+                test_case["Test Steps"][0],
+                test_case["Test Steps"][1],
+                test_case["Test Steps"][2],
+                test_case["Test Steps"][3],
+        ):
+            row_position = self.test_case_table.rowCount()
+            self.test_case_table.insertRow(row_position)
+            self.test_case_table.setItem(row_position, 0, QTableWidgetItem(step))
+            self.test_case_table.setItem(row_position, 1, QTableWidgetItem(expected))
+            self.test_case_table.setItem(row_position, 2, QTableWidgetItem(actual))
+            self.test_case_table.resizeRowsToContents()
+
+        preconditions = test_case.get("Preconditions", "")
+        self.preconditions_text.clear()
+        if preconditions:
+            self.preconditions_label.show()
+            self.preconditions_text.show()
+            self.preconditions_text.setText(preconditions)
         else:
-            self.preconditions_text.show_whole(columnspan=3)
-            self.preconditions_displayed = True
+            self.preconditions_label.hide()
+            self.preconditions_text.hide()
 
 
-    def control_actual_result(self, event=None):
-        if self.actual_results_displayed:
-            self.hide_actual_result()
-        else:
-            self.show_actual_result()
 
-    def hide_actual_result(self, change_status:bool=True):
-        self.test_case_table.hide_actual()
-        self.test_table_column_actual.grid_remove()
-        if change_status:
-            self.actual_results_displayed = False
-
-
-    def show_actual_result(self, change_status:bool=True):
-        #self.test_case_table.show_actual()
-        self.test_table_column_actual.grid(row=0,column=2)
-        self.displayTestCase(handle_actual_results=False)
-        if change_status:
-            self.actual_results_displayed = True
-
-    def myLabel(self, master:Misc, text:str, bold:bool=False, **kwargs) -> Label:
-        if bold:
-            label = Label(
-                master=master,
-                text=text,
-                bg=self.s.bg,
-                fg=self.s.fg,
-                font="bold",
-                **kwargs
-                )
-        else:
-            label = Label(
-                master=master,
-                text=text,
-                fg=self.s.fg,
-                bg=self.s.bg,
-                )
-        label.config(**kwargs)
-        return label
-
-    def myCombobox(self, master:Misc, textvariable, width) -> ttk.Combobox:
-        return ttk.Combobox(
-                master=master,
-                textvariable=textvariable,
-                width=width,
-                background=self.s.txt_bg,
-                cursor="cross"
-
-                
-                )
-
-    def myButton(self, master, text:str, command, fg=None, bg=None, image:bool=False,**kwargs) -> Button:
-        if image:
-            btn_image = self.pixel
-            width = 10
-            height = 10
-        else:
-            btn_image = None
-            width = None
-            height = None
-        return Button(
-                image=btn_image,#self.pixel,
-                master=master,
-                text=text,
-                command=command,
-                background=self.s.bg if bg is None else bg,
-                fg=self.s.fg if fg is None else fg,
-                highlightcolor=self.s.btn_highlight,
-                highlightbackground=self.s.btn_highlight,
-                activebackground=self.s.btn_highlight,
-                width=width,
-                height=height,
-                **kwargs
-                )
-    def myFrame(self, master) -> Frame:
-        return Frame(
-                master=master,
-                bg=self.s.bg,
-                )
-
+        if test_case.get("Assignee"):
+            self.assignee_label.show()
+            self.assignee_value.setText(test_case["Assignee"])
+            self.assignee_value.show()
 
     def setTestStatus(self, test_status: str):
         status = str(test_status).upper()
-        match status:
-            case "PASS":
-                color = Colors.green
-            case "FAIL":
-                color = Colors.red
-            case "BLOCKED":
-                color = Colors.yellow
-            case _:
-                color = Colors.gray
-        self.test_status_label.config(text=status, fg=color, bg=self.s.status_bg)
-        return f"""<b style="color: {color};">{status}</b>"""
-
+        color_map = {
+            "PASS": "green",
+            "FAIL": "red",
+            "BLOCKED": "yellow",
+            "NOT TESTED": "gray"
+        }
+        color = color_map.get(status, "gray")
+        self.test_status_label.setText(f"<b style='color:{color};'>{status}</b>")
 
     def loadTests(self):
-        file_path = filedialog.askopenfilename()
+        options = QFileDialog.Options()
+        file_path, _ = QFileDialog.getOpenFileName(self, "Load Test File", "", "All Files (*);;Excel Files (*.xlsx);;JSON Files (*.json)", options=options)
+        if not file_path:
+            return
+
         self.file_name = Path(file_path).name
 
         if file_path.endswith("xlsx"):
@@ -258,106 +340,74 @@ class PyTestCasesApp(Tk):
         elif file_path.endswith("json"):
             raw_data = self.loadJson(file_path)
         else:
-            messagebox.showerror("Error", "File format not supported")
+            QMessageBox.critical(self, "Error", "File format not supported")
             return
+
         self.loadTestsFromRawData(raw_data)
 
         if raw_data[0] == "from_output":
             execution_id = self.file_name.removeprefix(self.default_exports_prefix).removesuffix(".json")
-            self.execution_id_input.delete(0, END)
-            self.execution_id_input.insert(0, execution_id)
+            self.execution_id_input.setText(execution_id)
             self._update_test_execution_id()
             self.file_loaded_from_output = True
-            self.execution_id_input.config(state="disabled")
-            #self.test_cases.remove("from_output")
+            self.execution_id_input.setDisabled(True)
         else:
             self.file_loaded_from_output = False
-            current_text_execution = self.execution_id_input.get()
-            if current_text_execution == "":
+            current_text_execution = self.execution_id_input.text()
+            if not current_text_execution:
                 self.test_execution_id = str(int(time()))
-                self.execution_id_input.insert(0, self.test_execution_id)
+                self.execution_id_input.setText(self.test_execution_id)
 
-        self.test_case_dropdown['values'] = [
-            test_case for test_case in self.test_cases
-        ]
+        self.test_case_dropdown.clear()
+        self.test_case_dropdown.addItems([str(test_case) for test_case in self.test_cases])
 
         self.current_test_index = 0
-        self.test_case_dropdown.current(self.current_test_index)
+        self.test_case_dropdown.setCurrentIndex(self.current_test_index)
         self.displayTestCase()
 
-    def displayTestCase(self, event=None, handle_actual_results:bool=True):
-        # delete assignee
-        self.assignee_label.grid_remove()
-        self.assignee_value.grid_remove()
-        self.current_test_index = self.test_case_dropdown.current()
-        if self.current_test_index == -1:
+    def updateTestStatus(self, status: str):
+        if not len(self.test_cases):
             return
-
-        test_case = self.test_cases[self.current_test_index].dict()
-        #self.test_case_title.config(text=f"{test_case['Test Case ID']} - {test_case['Test Case Name']}")
-        self.setTestStatus(test_case["Test Status"])
-
-        self.test_case_table.clear()
-        #for row in self.test_case_table.get_children():
-        #    self.test_case_table.delete(row)
-
-        for step, expected, actual, note in zip(
-                test_case["Test Steps"][0],
-                test_case["Test Steps"][1],
-                test_case["Test Steps"][2],
-                test_case["Test Steps"][3],
-                ):
-            #lines_step = step[0].count("\n")
-            #lines_expected = step[1].count("\n")
-            #rowheight = max(lines_step, lines_expected) * 20
-            #rowheight = rowheight if rowheight else 20
-            #print(step[0],rowheight)
-            test_row = [step, expected, actual, note]
-            self.test_case_table.insert(test_row)
-        self.setTestStatus(test_case["Test Status"])
-        if not handle_actual_results:
-            return
-        preconditions = test_case["Preconditions"] if test_case["Preconditions"] is not None else ""
-        self.preconditions_text.clear()
-        self.preconditions_text.insert([preconditions])
-
-        #if not self.actual_results_displayed:
-        #    self.show_actual_result(change_status=False)
-        #    print(0)
-        if not self.actual_results_displayed:
-            self.hide_actual_result(change_status=False)
-        if test_case.get("Assignee"):
-            self.assignee_label.grid(row=2, column=1, sticky="W")
-            self.assignee_value.config(text=test_case["Assignee"])
-            self.assignee_value.grid(row=2, column=2, sticky="W")
-
-    def updateTestStatus(self, status:str, event=None):
         self.test_cases[self.current_test_index].set_status(status)
         self.setTestStatus(status)
         self.saveResults()
 
-    def previousTestCase(self, event=None):
-        if self.current_test_index > 0:
-            self.current_test_index -= 1
-            self.test_case_dropdown.current(self.current_test_index)
-            self.displayTestCase()
-
-    def nextTestCase(self, event=None):
+    def nextTestCase(self):
+        if not len(self.test_cases):
+            return
         if self.current_test_index < len(self.test_cases) - 1:
             self.current_test_index += 1
-            self.test_case_dropdown.current(self.current_test_index)
+            self.test_case_dropdown.setCurrentIndex(self.current_test_index)
+            self.displayTestCase()
+
+    def previousTestCase(self):
+        if not len(self.test_cases):
+            return
+        if self.current_test_index > 0:
+            self.current_test_index -= 1
+            self.test_case_dropdown.setCurrentIndex(self.current_test_index)
             self.displayTestCase()
 
     def _update_test_execution_id(self):
-        self.test_execution_id = self.execution_id_input.get()
+        self.test_execution_id = self.execution_id_input.text()
 
+    def _return_test_steps(self):
+        test_steps = [[],[],[],[]]
+        row_i, column_i = 0, 0
+        for column in range(self.test_case_table.columnCount()):
+            for row in range(self.test_case_table.rowCount()):
+                _item = self.test_case_table.item(row, column)
+                if _item:
+                    item = self.test_case_table.item(row, column).text()
+                    test_steps[column].append(item)
+        return test_steps
 
     def saveResults(self):
         self._update_test_execution_id()
-        self.test_execution_id = self.execution_id_input.get().strip()
+        self.test_execution_id = self.execution_id_input.text()
 
         if not self.file_loaded_from_output and not self.test_execution_id:
-            messagebox.showwarning("Error", "Test Execution ID is required!")
+            QMessageBox.warning(self, "Error", "Test Execution ID is required!")
             return
 
         if self.file_loaded_from_output:
@@ -367,7 +417,7 @@ class PyTestCasesApp(Tk):
 
         # read data from tables
         if not self.editing_disabled:
-            data_from_table = self.test_case_table.return_test_steps()
+            data_from_table = self._return_test_steps()
             self.test_cases[self.current_test_index].set_test_steps(data_from_table)
         #if isinstance(self.test_cases, str):
         #    test_case_data_to_save.insert(0, self.test_cases[0])
@@ -378,10 +428,127 @@ class PyTestCasesApp(Tk):
 
         # inform user that it worked
         if self.show_save_info:
-            messagebox.showinfo("Info", f"This pop-up is shown once per session!\nResults saved to {output_file_name}")
+            QMessageBox.information(self, "Info", f"This pop-up is shown once per session!\nResults saved to {output_file_name}")
             self.show_save_info = False
         #self.test_cases.remove("from_output")
 
+
+    def loadJson(self, file_path: str):
+        with open(file_path) as f:
+            return json.load(f)
+
+    def loadXlsx(self, file_path: str):
+        try:
+            from openpyxl import load_workbook
+        except ImportError:
+            err_msg = "Could not load openpyxl!\nInstall openpyxl or import json file!"
+            QMessageBox.critical(self, title="PyTestCases Error: Could not load Xlsx", text=err_msg)
+            raise ImportError(err_msg)
+        wb = load_workbook(file_path, data_only=True)
+        try:
+            ws = wb[self.xlsx_test_cases_sheet_name]
+        except KeyError:
+            QMessageBox.critical(self, title=self.app_name, text=f"Did not detect sheet with name '{self.xlsx_test_cases_sheet_name}'!")
+            return
+
+        column_names = [cell.value for cell in ws[self.column_names_row]]
+
+        raw_data = []
+        current_test_case = None
+        current_test_steps = []
+        current_test_preconditions = ""
+
+        # get the hidden rows
+        hidden_rows = set()
+        for row in ws.row_dimensions:
+            if ws.row_dimensions[row].hidden:
+                hidden_rows.add(row)
+
+        # gather data
+        for row in ws.iter_rows(min_row=self.test_case_data_starting_row, values_only=False):
+            # continue if row is hidden
+            if row[0].row in hidden_rows:
+                continue
+            # get data if row is visible
+            row_data = dict(zip(column_names, [c.value for c in row]))
+
+            if current_test_case and row_data["Test Case Id"] != current_test_case["Test Case Id"]:
+                tc = {
+                    "Test Case Id": int(float(current_test_case["Test Case Id"])),
+                    "Test Case Name": current_test_case["Test Case Name"],
+                    "Area": current_test_case["Area"],
+                    "Level": current_test_case["Level"],
+                    "Preconditions": current_test_preconditions,
+                    "Test Steps": current_test_steps,
+                    "Test Execution Id": current_test_case.get("Test Execution Id"),
+                    "Test Status": current_test_case.get("Test Status"),
+                    "Assignee": current_test_case.get("Assignee"),
+                    "Gsheet Document Id": current_test_case.get("Gsheet Document Id")
+                }
+                raw_data.append(tc)
+                current_test_steps = []
+                current_test_preconditions = ""
+
+            current_test_case = row_data
+            current_test_steps.append([row_data["Test Step Description"], row_data["Expected Result"], row_data["Actual Result"], row_data["Notes"]])
+            current_test_preconditions += (str(row_data["Preconditions"]) + "\n") if row_data.get("Preconditions") is not None else ""
+
+
+        if current_test_case:
+            tc = {
+                    "Test Case Id": current_test_case["Test Case Id"],
+                    "Test Case Name": current_test_case["Test Case Name"],
+                    "Area": current_test_case["Area"],
+                    "Level": current_test_case["Level"],
+                    "Preconditions": current_test_preconditions,
+                    "Test Steps": current_test_steps,
+                    "Test Execution Id": current_test_case.get("Test Execution Id"),
+                    "Test Status": current_test_case.get("Test Status"),
+                    "Assignee": current_test_case.get("Assignee"),
+                    "Gsheet Document Id": current_test_case.get("Gsheet Document Id")
+                }
+            raw_data.append(tc)
+
+        while raw_data[-1] is None:
+            raw_data.pop()
+        while raw_data[-1]["Test Case Id"] is None:
+            raw_data.pop()
+        return raw_data
+        self.test_cases += raw_data
+
+
+    def control_preconditions(self):
+        if self.preconditions_displayed:
+            self.preconditions_text_frame.hide()
+            self.preconditions_displayed = False
+        else:
+            self.preconditions_text_frame.show()
+            self.preconditions_displayed = True
+
+
+    def control_actual_results(self):
+        #print(self.geometry())
+        # TODO resize window
+        if not self.actual_results_displayed:
+            self.hide_actual_results()
+            self.actual_results_displayed = True
+            self.test_case_table_control_actual_resultss_btn.setText(">")
+            self.setFixedWidth(int(self.column_width*2))
+        else:
+            self.show_actual_results()
+            self.actual_results_displayed = False
+            self.test_case_table_control_actual_resultss_btn.setText("<")
+            self.setFixedWidth(int(self.column_width*3))
+        window_width = int(self.geometry().width())
+        self.test_case_table_control_actual_resultss_btn.move(window_width-45,10)
+
+    def hide_actual_results(self):
+        self.test_case_table.setColumnHidden(2, True)
+
+    def show_actual_results(self):
+        self.test_case_table.setColumnHidden(2, False)
+
+######
     def loadTestsFromRawData(self, raw_data: list[dict]):
         for i, test_case in enumerate(raw_data):
             if isinstance(test_case, str):
@@ -405,90 +572,15 @@ class PyTestCasesApp(Tk):
                 self.test_cases.append(tc)
             except TypeError as e:
                 print(test_case)
-                messagebox.showwarning(title=self.app_name, message=f"Could not convert '{test_case}' to Test Case due to TypeError: {e}")
+                QMessageBox.warning(self, self.app_name, f"Could not convert '{test_case}' to Test Case due to TypeError: {e}")
             except KeyError as e:
                 print(test_case)
-                messagebox.showerror(title=self.app_name, message=f"Could not load test case with index {i} due to KeyError: {e}!")
-
-    def loadJson(self, file_path: str) -> list[dict]:
-        with open(file_path, "r") as file:
-            data = json.load(file)
-        return data 
-
-    def loadXlsx(self, file_path: str) -> list:
-        try:
-            from openpyxl import load_workbook
-        except ImportError:
-            err_msg = "Could not load openpyxl!\nInstall openpyxl or import json file!"
-            messagebox.showerror(title="PyTestCases Error: Could not load Xlsx", message=err_msg)
-            raise ImportError(err_msg)
-        wb = load_workbook(file_path)
-        try:
-            ws = wb[self.xlsx_test_cases_sheet_name]
-        except KeyError:
-            messagebox.showerror(title=self.app_name, message=f"Did not detect sheet with name '{self.xlsx_test_cases_sheet_name}'!")
-            return
-
-        column_names = [cell.value for cell in ws[self.column_names_row]]
-
-        raw_data = []
-        current_test_case = None
-        current_test_steps = []
-        current_test_preconditions = ""
-
-        for row in ws.iter_rows(min_row=self.test_case_data_starting_row, values_only=True):
-            row_data = dict(zip(column_names, row))
-
-            if current_test_case and row_data["Test Case Id"] != current_test_case["Test Case Id"]:
-                tc = {
-                    "Test Case Id": current_test_case["Test Case Id"],
-                    "Test Case Name": current_test_case["Test Case Name"],
-                    "Area": current_test_case["Area"],
-                    "Level": current_test_case["Level"],
-                    "Preconditions": current_test_preconditions,
-                    "Test Steps": current_test_steps,
-                    "Test Execution Id": current_test_case.get("Test Execution Id"),
-                    "Test Status": current_test_case.get("Test Status"),
-                    "Assignee": current_test_case.get("Assignee"),
-                    "Gsheet Document Id": current_test_case.get("Gsheet Document Id")
-                }
-                raw_data.append(tc)
-                current_test_steps = []
-                current_test_preconditions = ""
-
-            current_test_case = row_data
-            current_test_steps.append([row_data["Test Step Description"], row_data["Expected Result"]])
-            current_test_preconditions += (str(row_data["Preconditions"]) + "\n") if row_data.get("Preconditions") is not None else ""
-
-
-        if current_test_case:
-            tc = {
-                    "Test Case Id": current_test_case["Test Case Id"],
-                    "Test Case Name": current_test_case["Test Case Name"],
-                    "Area": current_test_case["Area"],
-                    "Level": current_test_case["Level"],
-                    "Preconditions": current_test_preconditions,
-                    "Test Steps": current_test_steps,
-                    "Test Execution Id": current_test_case.get("Test Execution Id"),
-                    "Test Status": current_test_case.get("Test Status"),
-                    "Assignee": current_test_case.get("Assignee"),
-                    "Gsheet Document Id": current_test_case.get("Gsheet Document Id")
-                }
-            raw_data.append(tc)
-
-        while raw_data[-1] is None:
-            self.test_cases.pop()
-        return raw_data
-        self.test_cases += raw_data
-
-        #while self.test_cases[-1]["Test Case ID"] is None:
-        #    self.test_cases.pop()
-
-
-
-        
+                QMessageBox.error(self, self.app_name, f"Could not load test case with index {i} due to KeyError: {e}!")
 
 
 if __name__ == "__main__":
-    app = PyTestCasesApp()
-    app.mainloop()
+    app = QApplication([])
+    window = PyTestCasesApp()
+    app.exec_()
+
+
