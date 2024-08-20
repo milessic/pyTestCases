@@ -226,6 +226,15 @@ class PyTestCasesApp(QMainWindow):
         report_box.setText("Export is ready!")
         report_box.setDetailedText(report)
         report_box.setWindowFlag(Qt.WindowStaysOnTopHint)
+        report_box.setMinimumWidth(500)
+        report_box.setStyleSheet("""QLabel{
+        min-width: 300px;
+        min-height: 30px;
+        },
+        QTextEdit{
+        min-height: 450px;
+        }
+        """)
         report_box.exec()
 
     def _prepare_jira_export(self) -> str:
