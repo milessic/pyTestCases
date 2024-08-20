@@ -450,7 +450,6 @@ class PyTestCasesApp(QMainWindow):
             return
 
         column_names = [cell.value for cell in ws[self.column_names_row]]
-        print(column_names)
 
         raw_data = []
         current_test_case = None
@@ -498,6 +497,8 @@ class PyTestCasesApp(QMainWindow):
             raw_data.append(tc)
 
         while raw_data[-1] is None:
+            self.test_cases.pop()
+        while raw_data[-1]["Test Case ID"] is None:
             self.test_cases.pop()
         return raw_data
         self.test_cases += raw_data
