@@ -60,9 +60,14 @@ class PyTestCasesApp(QMainWindow):
 
         # TopNav
         top_nav = QHBoxLayout()
+        top_nav.setAlignment(Qt.AlignRight)
+        self.minimize_button = QPushButton("-", self)
+        self.minimize_button.setFixedWidth(30)
+        self.minimize_button.clicked.connect(self.showMinimized)
         self.close_button = QPushButton("x", self)
         self.close_button.setFixedWidth(30)
         self.close_button.clicked.connect(self.close)
+        top_nav.addWidget(self.minimize_button)
         top_nav.addWidget(self.close_button, alignment=Qt.AlignRight)
         self.layout.addLayout(top_nav)
         # Top Panel
@@ -84,7 +89,7 @@ class PyTestCasesApp(QMainWindow):
         # Dropdown for test cases
         self.test_case_dropdown = QComboBox(self)
         self.test_case_dropdown.currentIndexChanged.connect(self.displayTestCase)
-        self.test_case_dropdown.minimumWidth(120)
+        self.test_case_dropdown.setMinimumWidth(240)
 
         # Test status display
         self.test_status_info_label = QLabel("Test Status:", self)
