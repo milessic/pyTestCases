@@ -84,6 +84,7 @@ class PyTestCasesApp(QMainWindow):
         # Dropdown for test cases
         self.test_case_dropdown = QComboBox(self)
         self.test_case_dropdown.currentIndexChanged.connect(self.displayTestCase)
+        self.test_case_dropdown.minimumWidth(120)
 
         # Test status display
         self.test_status_info_label = QLabel("Test Status:", self)
