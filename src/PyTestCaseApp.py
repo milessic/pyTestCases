@@ -42,9 +42,10 @@ class PyTestCasesApp(QMainWindow):
         self.test_execution_id = None
 
         self.initUI()
+        self.setWindowFlags(Qt.FramelessWindowHint)
         if always_on_top:
             self.setWindowFlag(Qt.WindowStaysOnTopHint)
-        self.setWindowFlags(Qt.FramelessWindowHint)
+            print("aot")
         self.show()
         self.control_actual_results()
 
