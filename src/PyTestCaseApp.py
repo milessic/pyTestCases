@@ -45,7 +45,6 @@ class PyTestCasesApp(QMainWindow):
         self.setWindowFlags(Qt.FramelessWindowHint)
         if always_on_top:
             self.setWindowFlag(Qt.WindowStaysOnTopHint)
-            print("aot")
         self.show()
         self.control_actual_results()
 
@@ -445,6 +444,7 @@ class PyTestCasesApp(QMainWindow):
             return
 
         column_names = [cell.value for cell in ws[self.column_names_row]]
+        print(column_names)
 
         raw_data = []
         current_test_case = None
@@ -456,7 +456,7 @@ class PyTestCasesApp(QMainWindow):
 
             if current_test_case and row_data["Test Case Id"] != current_test_case["Test Case Id"]:
                 tc = {
-                    "Test Case Id": current_test_case["Test Case Id"],
+                    "Test Case Id": int(float(current_test_case["Test Case Id"])),
                     "Test Case Name": current_test_case["Test Case Name"],
                     "Area": current_test_case["Area"],
                     "Level": current_test_case["Level"],
@@ -472,7 +472,7 @@ class PyTestCasesApp(QMainWindow):
                 current_test_preconditions = ""
 
             current_test_case = row_data
-            current_test_steps.append([row_data["Test Step Description"], row_data["Expected Result"]])
+            current_test_steps.append([row_data["Test Step Description"], row_data["Expected Result"], row_data["Actual Result"], row_data["Notes"]])
             current_test_preconditions += (str(row_data["Preconditions"]) + "\n") if row_data.get("Preconditions") is not None else ""
 
 
@@ -552,10 +552,10 @@ class PyTestCasesApp(QMainWindow):
                 self.test_cases.append(tc)
             except TypeError as e:
                 print(test_case)
-                QMessageBox.warning(self, title=self.app_name, text=f"Could not convert '{test_case}' to Test Case due to TypeError: {e}")
+                QMessageBox.warning(self, self.app_name, f"Could not convert '{test_case}' to Test Case due to TypeError: {e}")
             except KeyError as e:
                 print(test_case)
-                QMessageBox.error(self, title=self.app_name, message=f"Could not load test case with index {i} due to KeyError: {e}!")
+                QMessageBox.error(self, self.app_name, f"Could not load test case with index {i} due to KeyError: {e}!")
 
 
 if __name__ == "__main__":
