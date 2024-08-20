@@ -3,8 +3,12 @@ class Formatting:
             "jira":{
                 "bullet": "* ",
                 "ordered": "# ",
-                "h1": ".h1",
-                "h2": ".h2"
+                "h1": ".h1 ",
+                "h2": ".h2 ",
+                "h3": ".h3 ",
+                "h4": ".h4 ",
+                "h5": ".h5 ",
+                "line_divider": "----"
                 }
             }
     def __init__(self, format:str):
