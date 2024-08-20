@@ -449,8 +449,19 @@ class PyTestCasesApp(QMainWindow):
         current_test_steps = []
         current_test_preconditions = ""
 
-        for row in ws.iter_rows(min_row=self.test_case_data_starting_row, values_only=True):
-            row_data = dict(zip(column_names, row))
+        # get the hidden rows
+        hidden_rows = set()
+        for row in ws.row_dimensions:
+            if ws.row_dimensions[row].hidden:
+                hidden_rows.add(row)
+
+        # gather data
+        for row in ws.iter_rows(min_row=self.test_case_data_starting_row, values_only=False):
+            # continue if row is hidden
+            if row[0].row in hidden_rows:
+                continue
+            # get data if row is visible
+            row_data = dict(zip(column_names, [c.value for c in row]))
 
             if current_test_case and row_data["Test Case Id"] != current_test_case["Test Case Id"]:
                 tc = {
@@ -490,9 +501,9 @@ class PyTestCasesApp(QMainWindow):
             raw_data.append(tc)
 
         while raw_data[-1] is None:
-            self.test_cases.pop()
-        while raw_data[-1]["Test Case ID"] is None:
-            self.test_cases.pop()
+            raw_data.pop()
+        while raw_data[-1]["Test Case Id"] is None:
+            raw_data.pop()
         return raw_data
         self.test_cases += raw_data
 
