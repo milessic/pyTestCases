@@ -211,7 +211,6 @@ class PyTestCasesApp(QMainWindow):
 
     def handleExport(self):
         selected_option = self.export_combo.currentText()
-        print(selected_option)
         match selected_option.lower():
             case "jira":
                 report = self._prepare_jira_export()
@@ -409,17 +408,10 @@ class PyTestCasesApp(QMainWindow):
         # read data from tables
         if not self.editing_disabled:
             data_from_table = self._return_test_steps()
-            print(self.test_cases[self.current_test_index].test_steps)
-            print("===")
-            print(data_from_table)
             self.test_cases[self.current_test_index].set_test_steps(data_from_table)
-            print("===")
-            print(self.test_cases[self.current_test_index].test_steps)
         #if isinstance(self.test_cases, str):
         #    test_case_data_to_save.insert(0, self.test_cases[0])
         test_case_data_to_save = [tc.dict_to_save() for tc in self.test_cases if isinstance(tc, TestCaseModel)]
-        print("--")
-        print(test_case_data_to_save[0])
         test_case_data_to_save.insert(0, "from_output")
         with open(output_file_name, "w") as file:
             json.dump(test_case_data_to_save, file, indent=4)
