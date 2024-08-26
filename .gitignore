@@ -156,3 +156,4 @@ cython_debug/
 
 output*
 *lock.excel*
+export_*.xlsx
