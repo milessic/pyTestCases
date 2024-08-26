@@ -17,7 +17,8 @@
     - [ ] Scrollable if table.height > ``.config.max_test_section_height``
 - [ ] Import from file improvements 
     - [x] Change the import to import all ``Supported Fields``
-    - [ ] Make import case-sensitivity-proof (always use Title Case)
+    - [ ] Make field importing case-sensitivity-proof (always use Title Case)
+    - [ ] Make importing asynchronous
 - [ ] Import from gSheet
     - [ ] ??
 - [x] Add Preconditions
