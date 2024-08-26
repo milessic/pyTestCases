@@ -1,5 +1,6 @@
 import json
-from os import walk
+import sys
+import os
 import re
 from pathlib import Path
 from time import time
@@ -10,6 +11,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QIcon
+from PyQt5 import QtGui
 
 from src.models import TestCaseModel
 from src.Elements import MyComboBox
@@ -30,7 +32,8 @@ class PyTestCasesApp(QMainWindow):
 
 
         self.app_name = "PyTestCases"
-        self.xlsx_test_cases_sheet_name = xlsx_test_cases_sheet_name
+        #self.xlsx_test_cases_sheet_name = xlsx_test_cases_sheet_name
+        self.xlsx_test_cases_sheet_name = ""
         self.default_exports_prefix = default_exports_prefix
         self.editing_disabled = False
         self.column_names_row = column_names_row
@@ -40,6 +43,9 @@ class PyTestCasesApp(QMainWindow):
         self.column_width = int(column_width)
         self.current_test_index = 0
         self.test_execution_id = None
+        self.icon_path = os.path.join(os.path.dirname(__file__), "icon27.png")
+        self.icon = QtGui.QIcon(self.icon_path)
+        self.setWindowIcon(self.icon)
 
         self.initUI()
         self.setWindowFlags(Qt.FramelessWindowHint)
@@ -60,15 +66,29 @@ class PyTestCasesApp(QMainWindow):
 
         # TopNav
         top_nav = QHBoxLayout()
-        top_nav.setAlignment(Qt.AlignRight)
+        top_nav_l = QHBoxLayout()
+        # left side of topnav
+        self.top_nav_icon_pixmap = QtGui.QPixmap()
+        self.top_nav_icon_pixmap.load(self.icon_path)
+        self.top_nav_icon = QLabel()
+        self.top_nav_icon.setPixmap(self.top_nav_icon_pixmap)
+        self.top_nav_app_name = QLabel(self.app_name, self)
+
+        top_nav_l.addWidget(self.top_nav_icon, alignment=Qt.AlignLeft)
+        top_nav_l.addWidget(self.top_nav_app_name, alignment=Qt.AlignLeft)
+        # right side of topnav 
+        top_nav_r = QHBoxLayout()
+        top_nav_r.setAlignment(Qt.AlignRight)
         self.minimize_button = QPushButton("-", self)
         self.minimize_button.setFixedWidth(30)
         self.minimize_button.clicked.connect(self.showMinimized)
         self.close_button = QPushButton("x", self)
         self.close_button.setFixedWidth(30)
-        self.close_button.clicked.connect(self.close)
-        top_nav.addWidget(self.minimize_button)
-        top_nav.addWidget(self.close_button, alignment=Qt.AlignRight)
+        self.close_button.clicked.connect(sys.exit)
+        top_nav_r.addWidget(self.minimize_button)
+        top_nav_r.addWidget(self.close_button, alignment=Qt.AlignRight)
+        top_nav.addLayout(top_nav_l)
+        top_nav.addLayout(top_nav_r)
         self.layout.addLayout(top_nav)
         # Top Panel
         self.execution_id_label = QLabel("Test Execution ID:", self)
@@ -76,7 +96,7 @@ class PyTestCasesApp(QMainWindow):
         self.load_tests_button = QPushButton("Load Tests", self)
         self.load_tests_button.clicked.connect(self.loadTests)
         self.export_combo = QComboBox(self)
-        self.export_combo.addItems(["Export","Jira"])
+        self.export_combo.addItems(["Export","Jira", "Xlsx"])
         self.export_combo.currentIndexChanged.connect(self.handleExport)
 
         top_layout = QHBoxLayout()
@@ -214,17 +234,20 @@ class PyTestCasesApp(QMainWindow):
         match selected_option.lower():
             case "jira":
                 report = self._prepare_jira_export()
+            case "xlsx":
+                report = self._prepare_xlsx_export()
             case "export":
                 return
             case _:
                 QMessageBox.critical(self, self.app_name, f"'{selected_option}' not supported as an export!")
+                return
         #raise NotImplemented
         self.export_combo.setCurrentIndex(0)
         report_box = QMessageBox()
         report_box.setGeometry(100,100,500,300)
         report_box.setWindowTitle(f"{selected_option} report")
-        report_box.setText("Export is ready!")
-        report_box.setDetailedText(report)
+        report_box.setText(report[0])
+        report_box.setDetailedText(report[1])
         report_box.setWindowFlag(Qt.WindowStaysOnTopHint)
         report_box.setMinimumWidth(500)
         report_box.setStyleSheet("""QLabel{
@@ -237,7 +260,7 @@ class PyTestCasesApp(QMainWindow):
         """)
         report_box.exec()
 
-    def _prepare_jira_export(self) -> str:
+    def _prepare_jira_export(self) -> tuple:
         f = Formatting("jira")
         passed = []
         failed = []
@@ -274,9 +297,73 @@ class PyTestCasesApp(QMainWindow):
         report += f"\n{f.f['h2']}Not tested tests\n"
         for tc in not_tested:
             report += f"{f.f['bullet']} {tc}\n"
-        return report
+        return ("Jira export is ready!\nClick \"Show Details\"", report)
 
-        
+    def _prepare_xlsx_export(self) -> tuple:
+        columns = ["A","B","C","D","E","F","G","H","I","J","K","L"]
+        try:
+            from openpyxl import Workbook
+        except ImportError:
+            err_msg = "Could not load openpyxl!\nInstall openpyxl or import json file!"
+            QMessageBox.critical(self, title="PyTestCases Error: Could not export Xlsx", text=err_msg)
+            raise ImportError(err_msg)
+        export_file = f"export_{self.test_execution_id}.xlsx"
+        wb = Workbook()
+        ws = wb.active
+        ws.append([])
+        ws.append([])
+        ws.append(["Area", "Test Case Id", "Feature", "Label", "Level", "Test Case Name", "Test Steps", "Preconditions", "Test Step Description", "Expected Result", "Test Status", "Assignee", "Actual Result", "Date Executed", "Notes"])
+        ws.title = f"{self.test_execution_id}"
+        report_msg = f"Following test cases were exported to {export_file}:"
+        report = ""
+        row_i = 0
+        for i, tc in enumerate(self.test_cases):
+            report += str(tc) + "\n"
+            tc_data = tc.dict_to_save()
+            #for field_name, field_values in tc_data.items():
+            if True:
+                for steps_i in range(len(tc_data["Test Steps"])):
+                    row_export_data = []
+                    row_export_data.append(tc_data["Area"])
+                    row_export_data.append(tc_data["Test Case Id"])
+                    row_export_data.append("")#tc_data["Feature"])
+                    row_export_data.append("")#tc_data["Label"])
+                    row_export_data.append(tc_data["Level"])
+                    row_export_data.append(tc_data["Test Case Name"])
+                    row_export_data.append("")#tc_data["Test Steps"]
+                    row_export_data.append(tc_data["Preconditions"])
+                    row_export_data.append(tc_data["Test Steps"][steps_i][0]) # Test Step Description
+                    row_export_data.append(tc_data["Test Steps"][steps_i][1]) # Expected Result
+                    row_export_data.append(tc_data["Test Status"])
+                    row_export_data.append(tc_data["Assignee"])
+                    row_export_data.append(tc_data["Test Steps"][steps_i][2])# Actual Result
+                    row_export_data.append("")#tc_data["Date Executed"]
+                    row_export_data.append(tc_data["Test Steps"][steps_i][3]) # Notes
+                    ws.append(row_export_data)
+                continue
+                    
+            """
+                    ws[row_i][0] = tc_data["Area"]
+                    ws[row_i][1] = tc_data["Test Case Id"]
+                    ws[row_i][2] = tc_data["Feature"]
+                    ws[row_i][3] = tc_data["Label"]
+                    ws[row_i][4] = tc_data["Level"]
+                    ws[row_i][5] = tc_data["Test Case Name"]
+                    ws[row_i][6] = ""#tc_data["Test Steps"]
+                    ws[row_i][7] = tc_data["Preconditions"]
+                    ws[row_i][8] = steps[0] # Test Step Description
+                    ws[row_i][9] = steps[1] # Expected Result
+                    ws[row_i][10] = tc_data["Test Status"]
+                    ws[row_i][11] = tc_data["Assignee"]
+                    ws[row_i][12] = steps[2] # Actual Result
+                    #ws[row_i][13] = tc_data["Date Executed"]
+                    ws[row_i][14] = steps[3] # Notes
+                    row_i += 1
+"""
+        wb.save(export_file)
+        return (report_msg, report)
+
+
     def displayTestCase(self):
         self.current_test_index = self.test_case_dropdown.currentIndex()
         if self.current_test_index == -1:
@@ -327,9 +414,12 @@ class PyTestCasesApp(QMainWindow):
         color = color_map.get(status, "gray")
         self.test_status_label.setText(f"<b style='color:{color};'>{status}</b>")
 
-    def loadTests(self):
+    def loadTests(self, event=None, file_path_arg:str|None = None):
         options = QFileDialog.Options()
-        file_path, _ = QFileDialog.getOpenFileName(self, "Load Test File", "", "All Files (*);;Excel Files (*.xlsx);;JSON Files (*.json)", options=options)
+        if file_path_arg is None:
+            file_path, _ = QFileDialog.getOpenFileName(self, "Load Test File", "", "All Files (*);;Excel Files (*.xlsx);;JSON Files (*.json)", options=options)
+        else:
+            file_path = file_path_arg
         if not file_path:
             return
 
@@ -337,6 +427,8 @@ class PyTestCasesApp(QMainWindow):
 
         if file_path.endswith("xlsx"):
             raw_data = self.loadXlsx(file_path)
+            if raw_data is None:
+                return
         elif file_path.endswith("json"):
             raw_data = self.loadJson(file_path)
         else:
@@ -448,9 +540,28 @@ class PyTestCasesApp(QMainWindow):
         try:
             ws = wb[self.xlsx_test_cases_sheet_name]
         except KeyError:
-            QMessageBox.critical(self, title=self.app_name, text=f"Did not detect sheet with name '{self.xlsx_test_cases_sheet_name}'!")
-            return
+            # TODO it's messy, but it does the job for now
+            win = QMainWindow()
+            win_widg = QWidget(win)
+            win.setCentralWidget(win_widg)
+            win.setWindowTitle(self.app_name)
+            win_layout = QVBoxLayout(win_widg)
+            win_label = QLabel("Enter Sheet name", win_widg)
+            win_entry = QLineEdit(win)
+            win_ok = QPushButton("Ok", win)
+            win_ok.clicked.connect(lambda: [setattr(self, "xlsx_test_cases_sheet_name", win_entry.text()), win.destroy(), self.loadTests(file_path_arg=file_path)])
+            win_detect = QPushButton("Detect Sheets", win_widg)
+            win_detect.clicked.connect(lambda: [self._detect_sheet_names(file_path)])
+            win_layout.addWidget(win_label)
+            win_layout.addWidget(win_entry)
+            win_layout.addWidget(win_ok)
+            win_layout.addWidget(win_detect)
+            win.show()
+            return 
+            #QMessageBox.critical(self, self.app_name, f"Did not detect sheet with name '{self.xlsx_test_cases_sheet_name}'!")
+            #return
 
+        ws = wb[self.xlsx_test_cases_sheet_name]
         column_names = [cell.value for cell in ws[self.column_names_row]]
 
         raw_data = []
@@ -576,6 +687,17 @@ class PyTestCasesApp(QMainWindow):
             except KeyError as e:
                 print(test_case)
                 QMessageBox.error(self, self.app_name, f"Could not load test case with index {i} due to KeyError: {e}!")
+
+    def _detect_sheet_names(self, file_path):
+        if "load_workbook" not in locals():
+            from openpyxl import load_workbook
+        sheet_names = load_workbook(file_path).sheetnames
+        sheet_names_as_str = f"Detected Sheet names for file {file_path}\n\n"
+        for sn in sheet_names:
+            sheet_names_as_str += " - " + sn + "\n"
+        QMessageBox.information(self, self.app_name, sheet_names_as_str)
+
+        
 
 
 if __name__ == "__main__":

@@ -53,11 +53,11 @@
     - [ ] Make a green ``!`` next to Exports (``Xlsx``, ``Csv``, ``gSheet``)
     - [ ] If exporting as (``Xlsx``, ``Csv``, ``gSheet``), ask if export with new data
 - [ ] Exports
-    - [ ] Create a template for ``text`` Exports
+    - [x] Create a template for ``text`` Exports
     - [ ] MD support
-    - [ ] Jira Markdown support
+    - [x] Jira Markdown support
     - [ ] HTML support
-    - [ ] Xlsx support
+    - [x] Xlsx support
         - [ ] import xlsx values and formulas, (for xlsx importsave)
     - [ ] Csv support
     - [ ] gSheet support
