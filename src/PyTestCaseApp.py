@@ -307,11 +307,13 @@ class PyTestCasesApp(QMainWindow):
             err_msg = "Could not load openpyxl!\nInstall openpyxl or import json file!"
             QMessageBox.critical(self, title="PyTestCases Error: Could not export Xlsx", text=err_msg)
             raise ImportError(err_msg)
+        # save results before export
+        self.saveResults()
         export_file = f"export_{self.test_execution_id}.xlsx"
         wb = Workbook()
         ws = wb.active
-        ws.append([])
-        ws.append([])
+        for _ in range(self.test_case_data_starting_row-2):
+            ws.append([])
         ws.append(["Area", "Test Case Id", "Feature", "Label", "Level", "Test Case Name", "Test Steps", "Preconditions", "Test Step Description", "Expected Result", "Test Status", "Assignee", "Actual Result", "Date Executed", "Notes"])
         ws.title = f"{self.test_execution_id}"
         report_msg = f"Following test cases were exported to {export_file}:"
@@ -332,6 +334,7 @@ class PyTestCasesApp(QMainWindow):
                     row_export_data.append(tc_data["Test Case Name"])
                     row_export_data.append("")#tc_data["Test Steps"]
                     row_export_data.append(tc_data["Preconditions"])
+                    tc_data["Preconditions"] = ""
                     row_export_data.append(tc_data["Test Steps"][steps_i][0]) # Test Step Description
                     row_export_data.append(tc_data["Test Steps"][steps_i][1]) # Expected Result
                     row_export_data.append(tc_data["Test Status"])
@@ -341,25 +344,6 @@ class PyTestCasesApp(QMainWindow):
                     row_export_data.append(tc_data["Test Steps"][steps_i][3]) # Notes
                     ws.append(row_export_data)
                 continue
-                    
-            """
-                    ws[row_i][0] = tc_data["Area"]
-                    ws[row_i][1] = tc_data["Test Case Id"]
-                    ws[row_i][2] = tc_data["Feature"]
-                    ws[row_i][3] = tc_data["Label"]
-                    ws[row_i][4] = tc_data["Level"]
-                    ws[row_i][5] = tc_data["Test Case Name"]
-                    ws[row_i][6] = ""#tc_data["Test Steps"]
-                    ws[row_i][7] = tc_data["Preconditions"]
-                    ws[row_i][8] = steps[0] # Test Step Description
-                    ws[row_i][9] = steps[1] # Expected Result
-                    ws[row_i][10] = tc_data["Test Status"]
-                    ws[row_i][11] = tc_data["Assignee"]
-                    ws[row_i][12] = steps[2] # Actual Result
-                    #ws[row_i][13] = tc_data["Date Executed"]
-                    ws[row_i][14] = steps[3] # Notes
-                    row_i += 1
-"""
         wb.save(export_file)
         return (report_msg, report)
 
