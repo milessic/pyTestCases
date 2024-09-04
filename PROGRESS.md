@@ -1,26 +1,25 @@
 # Versions
 ## v 0.1
 ### General
-- [ ] - Make app resizable
-- [ ] - Make Test Case Details section scrollable in better way
-    - [ ] - resize window size to fit at least 2 steps (?)
-- [ ] - Resize Test Case name to be fully shown
-- [ ] - Move Test Execution Id input to be aksed when saving
+- [x] - Make app resizable
+- [x] - Make Test Case Details section scrollable in better way
+- [x] - Resize Test Case name to be fully shown
+- [x] - Move Test Execution Id input to be aksed when saving
 
 ### Appearance
-- [ ] - Style status buttons
-    - [ ] All must fit
-    - [ ] colors
-- [ ] Make Test Section scrollable
-    - [ ] Scrollable if table.height > ``.config.max_test_section_height``
+- [x] - Style status buttons
+    - [x] All contents must fit
+    - [x] colors
+- [x] Make Test Section scrollable
+    - [x] Scrollable if table.height > ``.config.max_test_section_height``
 - [ ] Improve widget spacing
-- [ ] Create Test Status layout
-    - [ ] - Move Assignee here
-    - [ ] - move Test Status labels here
+- [x] Create Test Status layout
+    - [x] - Move Assignee here
+    - [x] - move Test Status labels here
 
 ### Imports
 - [ ] - Xlsx
-    - [ ] - Don't ask for sheet name, give dropdown with options instead
+    - [x] - Don't ask for sheet name, give dropdown with options instead
     - [ ] - Make sheet name window on top
 
 ### Exports

@@ -59,3 +59,4 @@ class MyComboBox(QtWidgets.QComboBox):
 
         # draw the icon and text
         painter.drawControl(QtWidgets.QStyle.CE_ComboBoxLabel, opt)
+
