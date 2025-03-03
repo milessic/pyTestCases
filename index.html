@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<link rel="icon" type="image/x-icon" href="icon.ico">
+	<link rel="icon" type="image/x-icon" href="pyTestCases/icon.ico">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>pyTestCases</title>
@@ -188,12 +188,12 @@ footer a:hover {
 
 		<h3></h3>
 		<div class="img-side">
-			<img src="page/pytestcases-1.png"></img>
+			<img src="pyTestCases/page/pytestcases-1.png"></img>
 		</div>
 
 		<h3></h3>
 		<div class="img-side">
-			<img src="page/pytestcases-2.png"></img>
+			<img src="pyTestCases/page/pytestcases-2.png"></img>
 			<p></p>
 		</div>
 	</section>
@@ -224,7 +224,7 @@ footer a:hover {
 			let translations = {};
 			let response;
 			try {
-				response = await fetch(`/page/${lang}.json`,
+				response = await fetch(`pyTestCases/page/${lang}.json`,
 					{
 						method: 'GET'
 					});
@@ -232,6 +232,9 @@ footer a:hover {
 			} catch (err) {
 				console.error(`Cannot download tranlastions for ${lang}! ${err}`);
 				if ( response.status === 404 ){
+					if ( lang === "en") {
+						throw new Error("Cannot fetch en.json!");
+					}
 					loadLang(null, "en");
 				}
 			}
