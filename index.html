@@ -220,6 +220,7 @@ footer a:hover {
 		async function loadLang(event, lang=null){
 			if ( !lang ){ 
 				lang = window.navigator.userLanguage || window.navigator.language
+				lang = lang.substring(0,2);
 			}
 			let translations = {};
 			let response;
