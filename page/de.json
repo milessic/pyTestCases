@@ -1,0 +1,19 @@
+{
+	"#section-header h1": "pyTestCases",
+	"#download-scroller": "Download",
+	"#section-header h3": "dein Programm zur Ausführung von Testfällen!",
+
+	"#section-about h2": "Über pyTestCases",
+	"#section-about p:nth-of-type(1)": "pyTestCases ist nicht nur ein Programm, sondern ein komplettes Framework, das auf GitHub beschrieben wird.\n\nMit pyTestCases kannst du deinen Testdurchführungsprozess optimieren!",
+
+	"#section-about h3": "Einfache Benutzeroberfläche",
+	"#section-about h3:nth-of-type(2)": "Viele Funktionen",
+	"#section-about div:nth-of-type(2) p": "__html__<ul><li>Die App bleibt immer im Vordergrund!</li><li>Testfälle ausführen</li><li>Export nach Xlsx, Jira Markdown</li><li>Import aus Xlsx, JSON</li></ul>",
+
+	"#section-download h2": "Jetzt herunterladen",
+	"#section-download p": "Du kannst eine der unten verfügbaren Versionen herunterladen oder GitHub besuchen, um die App selbst zu erstellen.",
+	"footer span": "Erstellt von",
+	"footer a": "Miłosz 'milessic' Jura",
+	"footer #year": ", 2024"
+}
+

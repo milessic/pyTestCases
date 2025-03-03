@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<link rel="icon" type="image/x-icon" href="icon.ico">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pyTestCases</title>
+    <style>
+		body {
+		    font-family: 'Inter', sans-serif;
+		    background-color: #0f0f0f;
+		    color: #e0e0e0;
+		    margin: 0;
+		    padding: 0;
+		    line-height: 1.6;
+		}
+		
+		/* Section Styling */
+		section {
+		    max-width: 900px;
+		    margin: 60px auto;
+		    padding: 40px;
+		    background: rgba(255, 255, 255, 0.05);
+		    border-radius: 12px;
+		    backdrop-filter: blur(10px);
+		    box-shadow: 0px 0px 20px rgba(255, 255, 255, 0.1);
+		    transition: all 0.3s ease-in-out;
+		}
+		
+		section:hover {
+		    transform: translateY(-5px);
+		}
+		
+		/* Typography */
+		h1, h2, h3 {
+		    text-align: center;
+		    font-weight: bold;
+		    color: #ffffff;
+		}
+		
+		h1 {
+		    font-size: 3em;
+		}
+		
+		h2 {
+		    font-size: 2.2em;
+		    margin-bottom: 10px;
+		}
+		
+		h3 {
+		    font-size: 1.5em;
+		    opacity: 0.8;
+		}
+		
+		p {
+		    font-size: 1.2em;
+		    text-align: center;
+		    opacity: 0.75;
+		}
+		
+		/* Button Styling */
+		button {
+		    display: block;
+		    width: 220px;
+		    margin: 30px auto;
+		    padding: 12px 24px;
+		    font-size: 1.2em;
+			background: linear-gradient(181deg, #2cde85, #214734);
+		    color: #fff;
+		    border: none;
+		    border-radius: 6px;
+		    cursor: pointer;
+		    transition: transform 0.2s ease, background 0.3s ease;
+		}
+		
+		button:hover {
+		    transform: scale(1.05);
+		    background: linear-gradient(135deg, #2cde85, #214734);
+		}
+		
+		/* Image Layout */
+		.img-side {
+		    display: flex;
+		    align-items: center;
+		    justify-content: center;
+		    gap: 30px;
+		    margin-top: 40px;
+		    flex-wrap: wrap;
+		}
+		
+		.img-side img {
+		    max-width: 100%;
+		    height: auto;
+		    border-radius: 8px;
+		    box-shadow: 0px 0px 15px rgba(255, 255, 255, 0.1);
+		}
+		
+		/* Links & List */
+		#section-download ul, #section-download li {
+		    list-style: none;
+			text-align: center !important;
+		}
+		ul {
+		    padding: 0;
+		    text-align: center;
+		}
+		
+		ul li {
+			text-align: left;
+			text-align: -webkit-auto;
+		    margin: 12px;
+		}
+		
+		ul li a {
+		    font-size: 1.2em;
+		    text-decoration: none;
+		    color: #00dfd8;
+		    transition: color 0.3s ease, transform 0.2s ease;
+		}
+		
+		ul li a:hover {
+		    color: #007bff;
+		    transform: scale(1.1);
+		}
+		
+		/* Responsive Design */
+		@media (max-width: 768px) {
+		    section {
+		        max-width: 95%;
+		        padding: 20px;
+		    }
+		
+		    h1 {
+		        font-size: 2.5em;
+		    }
+		
+		    h2 {
+		        font-size: 2em;
+		    }
+		
+		    p {
+		        font-size: 1em;
+		    }
+		
+		    .img-side {
+		        flex-direction: column;
+		    }
+		
+		}
+			/* Footer Styling */
+footer {
+    text-align: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #e0e0e0;
+    font-size: 1em;
+    margin-top: 50px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+footer a {
+    color: #00dfd8;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s ease, transform 0.2s ease;
+}
+
+footer a:hover {
+    color: #007bff;
+    transform: scale(1.1);
+}
+
+
+    </style>
+</head>
+<body>
+	<section id="section-header">
+		<h1></h1>
+		<h3></h3>
+		<button id="download-scroller">Download</button>
+	</section>
+
+
+
+	<section id="section-about">
+		<h2>About</h2>
+		<p></p>
+
+		<h3></h3>
+		<div class="img-side">
+			<img src="page/pytestcases-1.png"></img>
+		</div>
+
+		<h3></h3>
+		<div class="img-side">
+			<img src="page/pytestcases-2.png"></img>
+			<p></p>
+		</div>
+	</section>
+
+	<section id="section-download">
+		<h2 id="download"></h2>
+			<p>
+			</p>
+			<ul>
+				<li><a target="blank" href="https://drive.google.com/uc?export=download&id=1gMnHBPhShiLx-AEPYeGuDUGC6zNXtXNP">MacOS</a></li>
+				<!--
+				<li><a target="blank" href="https://drive.google.com/uc?export=download&id=">Linux</a></li>
+				<li><a target="blank" href="https://drive.google.com/uc?export=download&id=">Windows</a></li>
+				-->
+				<li><a href="https://github.com/milessic/pyTestCases">GitHub</a></li>
+			</ul>
+	</section>
+	<footer>
+		<span>Created by</span> <a href="https://mjportfolio.bieda.it/" target="_blank">Miłosz Jura</a><span id="year"></span>
+	</footer>
+	<script>
+		document.addEventListener("DOMContentLoaded", loadLang)
+		document.getElementById("download-scroller").addEventListener("click", () => {document.getElementById('download').scrollIntoView();})
+		async function loadLang(event, lang=null){
+			if ( !lang ){ 
+				lang = window.navigator.userLanguage || window.navigator.language
+			}
+			let translations = {};
+			let response;
+			try {
+				response = await fetch(`/page/${lang}.json`,
+					{
+						method: 'GET'
+					});
+				translations = await response.json();
+			} catch (err) {
+				console.error(`Cannot download tranlastions for ${lang}! ${err}`);
+				if ( response.status === 404 ){
+					loadLang(null, "en");
+				}
+			}
+			// load 
+			for ( const [k,v] of Object.entries(translations)){
+				try{
+					if ( v.startsWith("__html__") ){
+						document.querySelector(k).innerHTML = v.replace('__html__', '');
+						continue
+					}
+					document.querySelector(k).innerText = v;
+				}catch (err){
+				console.error("cannot set text for: ",k)
+				}
+			}
+		}
+	</script>
+</body>
+</html>
+

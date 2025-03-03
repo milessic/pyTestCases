@@ -1,0 +1,19 @@
+{
+	"#section-header h1": "pyTestCases",
+	"#download-scroller": "Download",
+	"#section-header h3": "your program for executing test cases!",
+
+	"#section-about h2": "About pyTestCases",
+	"#section-about p:nth-of-type(1)": "pyTestCases is not just a program but a complete framework, described on GitHub.\n\nWith pyTestCases, you can streamline your test execution process!",
+
+	"#section-about h3": "Simple Interface",
+	"#section-about h3:nth-of-type(2)": "Many Features",
+	"#section-about div:nth-of-type(2) p": "__html__<ul><li>The app is always on top!</li><li>Execute test cases</li><li>Exports to Xlsx, Jira Markdown</li><li>Import from Xlsx, JSON</li></ul>",
+
+	"#section-download h2": "Download Now",
+	"#section-download p": "You can download one of the available versions below or visit GitHub to build the app yourself.",
+	"footer span": "Created by",
+	"footer a": "Miłosz 'milessic' Jura",
+	"footer #year": ", 2024"
+}
+
