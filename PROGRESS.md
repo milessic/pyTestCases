@@ -1,3 +1,45 @@
+# Versions
+## v 0.1
+### General
+- [x] - Make app resizable
+- [x] - Make Test Case Details section scrollable in better way
+- [x] - Resize Test Case name to be fully shown
+- [x] - Move Test Execution Id input to be aksed when saving
+
+### Appearance
+- [x] - Style status buttons
+    - [x] All contents must fit
+    - [x] colors
+- [x] Make Test Section scrollable
+    - [x] Scrollable if table.height > ``.config.max_test_section_height``
+- [ ] Improve widget spacing
+- [x] Create Test Status layout
+    - [x] - Move Assignee here
+    - [x] - move Test Status labels here
+
+### Imports
+- [ ] - Xlsx
+    - [x] - Don't ask for sheet name, give dropdown with options instead
+    - [ ] - Make sheet name window on top
+
+### Exports
+- [ ] - Xlsx
+    - [ ] - Move export path to details
+
+
+## v 0.
+### General
+- [ ] -
+
+### Appearance
+- [ ] - 
+
+### Imports
+- [ ] - 
+
+### Exports
+- [ ] - 
+
 # Tasks
 - [ ] Create .config file and it's handling
     - [x] config support
@@ -13,8 +55,6 @@
         - [x] Max Test Section height ``??``
     - [x] Export settings
         - [x] Default prefix ``output_``
-- [ ] Make Test Section scrollable
-    - [ ] Scrollable if table.height > ``.config.max_test_section_height``
 - [ ] Import from file improvements 
     - [x] Change the import to import all ``Supported Fields``
     - [ ] Make field importing case-sensitivity-proof (always use Title Case)

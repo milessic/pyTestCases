@@ -1,4 +1,5 @@
 import json
+import asyncio
 import sys
 import os
 import re
@@ -7,10 +8,11 @@ from time import time
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout,
     QHBoxLayout, QFrame, QFileDialog, QMessageBox, QComboBox, QTableWidget,
-    QTableWidgetItem, QHeaderView, QWidget, QTextEdit
-)
-from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QIcon
+    QTableWidgetItem, QHeaderView, QWidget, QTextEdit, QSizeGrip, QSizePolicy, QInputDialog,
+    )
+from PyQt5.QtCore import Qt, QPoint, QRect
+from PyQt5.QtGui import QIcon, QStandardItemModel
+
 from PyQt5 import QtGui
 
 from src.models import TestCaseModel
@@ -48,9 +50,10 @@ class PyTestCasesApp(QMainWindow):
         self.setWindowIcon(self.icon)
 
         self.initUI()
-        self.setWindowFlags(Qt.FramelessWindowHint)
+        flags = Qt.Window | Qt.FramelessWindowHint
         if always_on_top:
-            self.setWindowFlag(Qt.WindowStaysOnTopHint)
+            flags |= Qt.WindowStaysOnTopHint
+        self.setWindowFlags(flags)
         self.show()
         self.control_actual_results()
 
@@ -85,49 +88,73 @@ class PyTestCasesApp(QMainWindow):
         self.close_button = QPushButton("x", self)
         self.close_button.setFixedWidth(30)
         self.close_button.clicked.connect(sys.exit)
-        top_nav_r.addWidget(self.minimize_button)
-        top_nav_r.addWidget(self.close_button, alignment=Qt.AlignRight)
-        top_nav.addLayout(top_nav_l)
-        top_nav.addLayout(top_nav_r)
         self.layout.addLayout(top_nav)
         # Top Panel
-        self.execution_id_label = QLabel("Test Execution ID:", self)
-        self.execution_id_input = QLineEdit(self)
+        self.help_button = QPushButton("?", self)
+        self.help_button.setFixedWidth(30)
+        self.help_button.clicked.connect(self.showHelp)
         self.load_tests_button = QPushButton("Load Tests", self)
         self.load_tests_button.clicked.connect(self.loadTests)
         self.export_combo = QComboBox(self)
         self.export_combo.addItems(["Export","Jira", "Xlsx"])
         self.export_combo.currentIndexChanged.connect(self.handleExport)
 
-        top_layout = QHBoxLayout()
-        top_layout.addWidget(self.execution_id_label)
-        top_layout.addWidget(self.execution_id_input)
-        top_layout.addWidget(self.load_tests_button)
-        top_layout.addWidget(self.export_combo)
-        self.layout.addLayout(top_layout)
+        top_nav_r.addWidget(self.load_tests_button)
+        top_nav_r.addWidget(self.export_combo)
+        top_nav_r.addWidget(self.help_button)
+        top_nav_r.addWidget(self.minimize_button)
+        top_nav_r.addWidget(self.close_button, alignment=Qt.AlignRight)
+        top_nav.addLayout(top_nav_l)
+        top_nav.addLayout(top_nav_r)
 
         # Dropdown for test cases
         self.test_case_dropdown = QComboBox(self)
         self.test_case_dropdown.currentIndexChanged.connect(self.displayTestCase)
         self.test_case_dropdown.setMinimumWidth(240)
 
-        # Test status display
-        self.test_status_info_label = QLabel("Test Status:", self)
-        self.test_status_label = QLabel("", self)
         dropdown_layout = QHBoxLayout()
         dropdown_layout.addWidget(self.test_case_dropdown)
-        dropdown_layout.addWidget(self.test_status_info_label)
-        dropdown_layout.addWidget(self.test_status_label)
         self.layout.addLayout(dropdown_layout)
+
+        # Test status display
+        status_layout = QHBoxLayout()
+        self.test_status_info_label = QLabel("Test Status:", self)
+        self.test_status_label = QLabel("", self)
+        self.assignee_label = QLabel("Assignee", self)
+        self.assignee_value = QLabel("", self)
+        status_layout.addWidget(self.test_status_info_label)
+        status_layout.addWidget(self.test_status_label)
+        status_layout.addWidget(self.assignee_label)
+        status_layout.addWidget(self.assignee_value)
+        self.layout.addLayout(status_layout)
 
         # Buttons for test status updates
         self.button_frame = QFrame(self)
         self.button_layout = QHBoxLayout(self.button_frame)
 
         self.pass_button = QPushButton("PASS", self.button_frame)
+        self.pass_button.setStyleSheet("""font-size: 8pt;
+        font-weight: bold;
+        color:green;
+        """)
         self.fail_button = QPushButton("FAIL", self.button_frame)
+        self.fail_button.setStyleSheet("""font-size: 8pt;
+        font-weight: bold;
+        color:red;
+        """)
+
         self.blocked_button = QPushButton("BLOCKED", self.button_frame)
-        self.not_tested_button = QPushButton("NOT TESTED", self.button_frame)
+        self.blocked_button.setStyleSheet("""font-size: 8pt;
+        font-weight: bold;
+        color:yellow;
+        """)
+
+        self.not_tested_button = QPushButton("NOT\nTESTED", self.button_frame)
+        self.not_tested_button.setFixedHeight(26)#self.blocked_button.geometry().height())
+        self.not_tested_button.setStyleSheet("""font-size: 7pt;
+        font-weight: bold;
+        """)
+
         self.prev_button = QPushButton("Previous", self.button_frame)
         self.next_button = QPushButton("Next", self.button_frame)
 
@@ -148,19 +175,18 @@ class PyTestCasesApp(QMainWindow):
 
         # Preconditions display
         self.preconditions_text_frame = QFrame(self)
+        self.preconditions_text_frame.setStyleSheet("font-size: 8pt")
         self.preconditions_layout = QVBoxLayout(self.preconditions_text_frame)
         self.preconditions_text_layout = QHBoxLayout()
         self.preconditions_layout.addLayout(self.preconditions_text_layout)
         self.preconditions_label = QLabel("Preconditions", self.preconditions_text_frame)
-        self.assignee_label = QLabel("Assignee", self.preconditions_text_frame)
-        self.assignee_value = QLabel("", self.preconditions_text_frame)
         self.preconditions_text = QTextEdit("", self.preconditions_text_frame)
+        self.preconditions_text.setMaximumHeight(100)
+        self.preconditions_text.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         #self.preconditions_text.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.preconditions_text_layout.addWidget(self.preconditions_label)
         self.preconditions_layout.addWidget(self.preconditions_text)
-        self.preconditions_text_layout.addWidget(self.assignee_label)
-        self.preconditions_text_layout.addWidget(self.assignee_value)
         self.layout.addWidget(self.preconditions_text_frame)
 
         # Test Case Table
@@ -172,6 +198,7 @@ class PyTestCasesApp(QMainWindow):
         self.test_case_table.horizontalHeader().setStretchLastSection(True)
         self.test_case_table.setWordWrap(True)
         self.test_case_table.setMinimumHeight(150) 
+        self.test_case_table.setStyleSheet("font-size: 8pt;")
         # test case control button
         self.test_case_table_control_actual_resultss_btn = QPushButton("x", self.table_test_case_frame)
         self.test_case_table_control_actual_resultss_btn.clicked.connect(lambda: self.control_actual_results())
@@ -179,9 +206,57 @@ class PyTestCasesApp(QMainWindow):
 
         self.test_table_layout.addWidget(self.test_case_table)
         self.layout.addWidget(self.table_test_case_frame)
+        self.initGripPoints()
 
+    def showHelp(self, event):
+        win = QMainWindow()
+        win.setWindowTitle("Help")
+        win.setWindowFlags(Qt.WindowStaysOnTopHint)
+        win_widg = QWidget(win)
+        win.setCentralWidget(win_widg)
+        win.setWindowTitle(self.app_name)
+        win_layout = QVBoxLayout(win_widg)
+        win_label = QLabel("""<h2>Shortcuts:</h2>
+- q - previous test case<br>
+- w - next test case<br>
+                           <hr>
+- Ctrl + q - control Preconditions display mode<br>
+- Ctrl + w - control Actual Results display mode<br>
+                           <hr>
+- Ctrl + 1 - set Test Status to PASS<br>
+- Ctrl + 2 - set Test Status to FAIL<br>
+- Ctrl + 3 - set Test Status to BLOCKED<br>
+- Ctrl + 4 - set Test Status to NOT TESTED<br>
+                           """,
+                           win_widg)
+        win_close = QPushButton("Close", win_widg)
+        win_close.clicked.connect(lambda: win.destroy())
+        win_layout.addWidget(win_label)
+        win_layout.addWidget(win_close)
+        win.show()
+        return 
+
+    def initGripPoints(self):
+        self.gripSize = 16
+        self.grip = QSizeGrip(self)
+        #self.grip.setStyleSheet("background: transparent")
+        self.grip.resize(self.gripSize, self.gripSize)
+        self._move_grip()
+
+    def _move_grip(self):
+        rect = self.rect()
+        self.grip.move(
+                self.width() - self.gripSize
+                , rect.bottom() - self.gripSize
+
+                #        rect.right() - self.gripSize-20, rect.bottom() - self.gripSize-20
+                )
 
     # events
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._move_grip()
+
     def keyReleaseEvent(self, e):
         if e.key() == Qt.Key_Control:
             self.control_pressed = False
@@ -235,6 +310,10 @@ class PyTestCasesApp(QMainWindow):
             case "jira":
                 report = self._prepare_jira_export()
             case "xlsx":
+                if self.test_execution_id is None or not self.test_execution_id:
+                    self.saveResults()
+                    self.export_combo.setCurrentIndex(0)
+                    return
                 report = self._prepare_xlsx_export()
             case "export":
                 return
@@ -348,8 +427,9 @@ class PyTestCasesApp(QMainWindow):
         return (report_msg, report)
 
 
-    def displayTestCase(self):
-        self.current_test_index = self.test_case_dropdown.currentIndex()
+    def displayTestCase(self, update_index:bool=True):
+        if update_index:
+            self.current_test_index = self.test_case_dropdown.currentIndex()
         if self.current_test_index == -1:
             return
 
@@ -423,29 +503,39 @@ class PyTestCasesApp(QMainWindow):
 
         if raw_data[0] == "from_output":
             execution_id = self.file_name.removeprefix(self.default_exports_prefix).removesuffix(".json")
-            self.execution_id_input.setText(execution_id)
             self._update_test_execution_id()
             self.file_loaded_from_output = True
-            self.execution_id_input.setDisabled(True)
         else:
-            self.file_loaded_from_output = False
-            current_text_execution = self.execution_id_input.text()
-            if not current_text_execution:
-                self.test_execution_id = str(int(time()))
-                self.execution_id_input.setText(self.test_execution_id)
-
+            pass
         self.test_case_dropdown.clear()
-        self.test_case_dropdown.addItems([str(test_case) for test_case in self.test_cases])
+        self._update_test_case_dropdown()
 
         self.current_test_index = 0
         self.test_case_dropdown.setCurrentIndex(self.current_test_index)
         self.displayTestCase()
 
+
+    def _update_test_case_dropdown(self):
+        current_index = self.current_test_index
+        while self.test_case_dropdown.count():
+            self.test_case_dropdown.removeItem(0)
+        model = QStandardItemModel()
+        for test_case in self.test_cases:
+            item = QtGui.QStandardItem()
+            item.setText(str(test_case))
+            model.appendRow(item)
+        self.test_case_dropdown.setModel(model)
+        #self.test_case_dropdown.addItems([str(test_case) for test_case in self.test_cases])
+        self.test_case_dropdown.setCurrentIndex(current_index)
+
+
     def updateTestStatus(self, status: str):
         if not len(self.test_cases):
             return
         self.test_cases[self.current_test_index].set_status(status)
+        self._update_test_case_dropdown()
         self.setTestStatus(status)
+        #self.displayTestCase()
         self.saveResults()
 
     def nextTestCase(self):
@@ -465,7 +555,18 @@ class PyTestCasesApp(QMainWindow):
             self.displayTestCase()
 
     def _update_test_execution_id(self):
-        self.test_execution_id = self.execution_id_input.text()
+        if self.test_execution_id is None:
+            self.file_loaded_from_output = False
+            current_text_execution, ok_pressed = QInputDialog.getText(self,
+                                                          "Provide Execution Id",
+                                                          "Provide Execution Id",
+                                                          QLineEdit.Normal
+                                                          )
+            if not ok_pressed:
+                QMessageBox.critical(self, "ExecutionId is mandatory!", "Please try again, but this time provide Execution Id")
+                return False
+            self.test_execution_id = current_text_execution
+            return True
 
     def _return_test_steps(self):
         test_steps = [[],[],[],[]]
@@ -479,11 +580,12 @@ class PyTestCasesApp(QMainWindow):
         return test_steps
 
     def saveResults(self):
-        self._update_test_execution_id()
-        self.test_execution_id = self.execution_id_input.text()
+        status = self._update_test_execution_id()
+        if not status:
+            return
 
         if not self.file_loaded_from_output and not self.test_execution_id:
-            QMessageBox.warning(self, "Error", "Test Execution ID is required!")
+            QMessageBox.warning(self, "Error", "Test Execution ID is required and cannot be empty!")
             return
 
         if self.file_loaded_from_output:
@@ -526,20 +628,19 @@ class PyTestCasesApp(QMainWindow):
         except KeyError:
             # TODO it's messy, but it does the job for now
             win = QMainWindow()
+            win.setWindowFlags(Qt.WindowStaysOnTopHint)
             win_widg = QWidget(win)
             win.setCentralWidget(win_widg)
             win.setWindowTitle(self.app_name)
             win_layout = QVBoxLayout(win_widg)
-            win_label = QLabel("Enter Sheet name", win_widg)
-            win_entry = QLineEdit(win)
+            win_label = QLabel("Select Sheet to load", win_widg)
+            win_entry = QComboBox(self)
+            win_entry.addItems(self._detect_sheet_names(wb))
             win_ok = QPushButton("Ok", win)
-            win_ok.clicked.connect(lambda: [setattr(self, "xlsx_test_cases_sheet_name", win_entry.text()), win.destroy(), self.loadTests(file_path_arg=file_path)])
-            win_detect = QPushButton("Detect Sheets", win_widg)
-            win_detect.clicked.connect(lambda: [self._detect_sheet_names(file_path)])
+            win_ok.clicked.connect(lambda: [setattr(self, "xlsx_test_cases_sheet_name", win_entry.currentText()), win.destroy(), self.loadTests(file_path_arg=file_path)])
             win_layout.addWidget(win_label)
             win_layout.addWidget(win_entry)
             win_layout.addWidget(win_ok)
-            win_layout.addWidget(win_detect)
             win.show()
             return 
             #QMessageBox.critical(self, self.app_name, f"Did not detect sheet with name '{self.xlsx_test_cases_sheet_name}'!")
@@ -635,7 +736,7 @@ class PyTestCasesApp(QMainWindow):
             self.test_case_table_control_actual_resultss_btn.setText("<")
             self.setFixedWidth(int(self.column_width*3))
         window_width = int(self.geometry().width())
-        self.test_case_table_control_actual_resultss_btn.move(window_width-45,10)
+        self.test_case_table_control_actual_resultss_btn.move(window_width-47,10)
 
     def hide_actual_results(self):
         self.test_case_table.setColumnHidden(2, True)
@@ -672,10 +773,12 @@ class PyTestCasesApp(QMainWindow):
                 print(test_case)
                 QMessageBox.error(self, self.app_name, f"Could not load test case with index {i} due to KeyError: {e}!")
 
-    def _detect_sheet_names(self, file_path):
+    def _detect_sheet_names(self, wb):
         if "load_workbook" not in locals():
             from openpyxl import load_workbook
-        sheet_names = load_workbook(file_path).sheetnames
+        sheet_names = wb.sheetnames
+        return sheet_names
+
         sheet_names_as_str = f"Detected Sheet names for file {file_path}\n\n"
         for sn in sheet_names:
             sheet_names_as_str += " - " + sn + "\n"

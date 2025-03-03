@@ -36,7 +36,7 @@ class TestCaseModel:
         self.gsheet_document_id = gsheet_document_id
 
     def __str__(self):
-        return f"{self.test_case_id} - {self.test_case_name}"
+        return f"{self.test_case_id} - [{self.test_status[0] if self.test_status is not None else 'N'}] - {self.test_case_name}"
     
     def dict(self) -> dict:
         as_dict = {}
