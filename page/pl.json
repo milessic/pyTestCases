@@ -8,7 +8,7 @@
 
 	"#section-about h3": "Prosty interfejs",
 	"#section-about h3:nth-of-type(2)": "Wiele funkcjonalności",
-	"#section-about div:nth-of-type(2) p": "__html__<ul><li>Apka zawsze jest na wierzchu!</li><li>Wykonywać przypadki testowe</li><li>Exporty do Xlsx, Jira mardkown</li><li>Import z Xlsx, JSON</li></ul>",
+	"#section-about div:nth-of-type(2) p": "__html__<ul><li>Apka zawsze jest na wierzchu!</li><li>Wykonuj przypadki testowe</li><li>Exporty do Xlsx, Jira mardkown</li><li>Import z Xlsx, JSON</li></ul>",
 
 	"#section-download h2": "Pobierz teraz",
 	"#section-download p": "Możesz pobrać jedną z wersji dostępnych poniżej, bądź odwiedzić GitHub w celu zbudowania apki samemu",
